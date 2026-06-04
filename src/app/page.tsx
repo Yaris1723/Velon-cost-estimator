@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   Search, 
   Plus, 
@@ -15,7 +16,7 @@ import {
   CheckCircle2,
   Calendar
 } from "lucide-react";
-import { useEstimateStore } from "@/store/useEstimateStore";
+import { useEstimateStore, MOCK_ESTIMATES } from "@/store/useEstimateStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -38,8 +39,15 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 export default function Dashboard() {
-  const { estimates, duplicateEstimate, deleteEstimate } = useEstimateStore();
+  const router = useRouter();
+  const { estimates, duplicateEstimate, deleteEstimate, addEstimate } = useEstimateStore();
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (estimates.length === 0) {
+      MOCK_ESTIMATES.forEach(e => addEstimate(e));
+    }
+  }, [estimates.length, addEstimate]);
 
   const filteredEstimates = estimates.filter(e => 
     e.details.clientName.toLowerCase().includes(search.toLowerCase()) ||
@@ -47,11 +55,13 @@ export default function Dashboard() {
     e.details.location.toLowerCase().includes(search.toLowerCase())
   );
 
+  const totalValue = estimates.reduce((sum, e) => sum + e.summary.grandTotal, 0);
+
   const stats = [
-    { name: "Total Estimates", value: estimates.length, icon: FileText, color: "text-blue-600" },
-    { name: "Active Projects", value: "12", icon: TrendingUp, color: "text-green-600" },
-    { name: "New Clients", value: "8", icon: Users, color: "text-orange-600" },
-    { name: "Approved BOQs", value: "45", icon: CheckCircle2, color: "text-gold" },
+    { name: "Total Estimates", value: String(estimates.length).padStart(2, '0'), icon: FileText, color: "text-blue-600" },
+    { name: "Total Value (INR)", value: `₹${totalValue.toLocaleString()}`, icon: TrendingUp, color: "text-green-600" },
+    { name: "Active Projects", value: String(estimates.length).padStart(2, '0'), icon: CheckCircle2, color: "text-gold" },
+    { name: "New Clients", value: String(new Set(estimates.map(e => e.details.clientName)).size).padStart(2, '0'), icon: Users, color: "text-orange-600" },
   ];
 
   return (
@@ -128,7 +138,7 @@ export default function Dashboard() {
                       </div>
                     </TableCell>
                     <TableCell className="font-medium text-slate-700">{estimate.details.clientName}</TableCell>
-                    <TableCell className="text-slate-500">{format(new Date(estimate.details.date), "MMM d, yyyy")}</TableCell>
+                    <TableCell className="text-slate-500" suppressHydrationWarning>{format(new Date(estimate.details.date), "MMM d, yyyy")}</TableCell>
                     <TableCell className="font-bold text-navy">₹{estimate.summary.grandTotal.toLocaleString()}</TableCell>
                     <TableCell>
                       <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border-emerald-100 font-medium px-3">Completed</Badge>
@@ -143,8 +153,11 @@ export default function Dashboard() {
                           <MoreHorizontal className="w-4 h-4 text-slate-500" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48 p-2 rounded-xl border-slate-100">
-                          <DropdownMenuItem className="gap-2 py-2.5 cursor-pointer rounded-lg">
-                            <Eye className="w-4 h-4" /> View Details
+                          <DropdownMenuItem 
+                            className="gap-2 py-2.5 cursor-pointer rounded-lg"
+                            onClick={() => router.push(`/estimate/new?id=${estimate.id}`)}
+                          >
+                            <Eye className="w-4 h-4" /> Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             className="gap-2 py-2.5 cursor-pointer rounded-lg"

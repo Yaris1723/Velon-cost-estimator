@@ -64,10 +64,128 @@ interface EstimateStore {
   calculateQuantities: (details: ProjectDetails) => MaterialItem[];
 }
 
+export const MOCK_ESTIMATES: Estimate[] = [
+  {
+    id: "mock-1",
+    details: {
+      projectName: "Adyar Residential Villa",
+      clientName: "Suresh Kumar",
+      location: "Chennai",
+      date: "2026-06-01",
+      projectType: "villa",
+      builtUpArea: 2500,
+      floors: 2,
+      foundationType: "Isolated Footing",
+      wallThickness: "9 inch",
+      slabThickness: "5 inch",
+      rooms: 4,
+      bathrooms: 4,
+      staircase: true,
+      parking: true,
+    },
+    materials: [
+      { id: '1', name: 'Cement', category: MATERIAL_CATEGORIES.CEMENT, unit: MATERIAL_UNITS.cement, quantity: 300, rate: 400, total: 120000 },
+      { id: '2', name: 'Steel / TMT Rods', category: MATERIAL_CATEGORIES.STEEL, unit: MATERIAL_UNITS.steel, quantity: 2, rate: 65000, total: 130000 },
+      { id: '3', name: 'River Sand', category: MATERIAL_CATEGORIES.SAND, unit: MATERIAL_UNITS.sand, quantity: 800, rate: 80, total: 64000 },
+      { id: '4', name: 'M-Sand', category: MATERIAL_CATEGORIES.MSAND, unit: MATERIAL_UNITS.mSand, quantity: 1200, rate: 60, total: 72000 },
+      { id: '5', name: '20mm Jalli', category: MATERIAL_CATEGORIES.JALLI_20, unit: MATERIAL_UNITS.jalli20, quantity: 1000, rate: 64, total: 64000 }
+    ],
+    summary: {
+      materialTotal: 450000,
+      labourCost: 150000,
+      contractorMargin: 10,
+      wastage: 5,
+      transportation: 30000,
+      miscellaneous: 20000,
+      grandTotal: 650000,
+    },
+    version: 1,
+    createdAt: "2026-06-01T10:00:00.000Z",
+    updatedAt: "2026-06-01T10:00:00.000Z",
+  },
+  {
+    id: "mock-2",
+    details: {
+      projectName: "OMR Commercial Office",
+      clientName: "Karthik Raja",
+      location: "Kanchipuram",
+      date: "2026-06-02",
+      projectType: "commercial",
+      builtUpArea: 1800,
+      floors: 1,
+      foundationType: "Isolated Footing",
+      wallThickness: "9 inch",
+      slabThickness: "5 inch",
+      rooms: 2,
+      bathrooms: 2,
+      staircase: false,
+      parking: true,
+    },
+    materials: [
+      { id: '1', name: 'Cement', category: MATERIAL_CATEGORIES.CEMENT, unit: MATERIAL_UNITS.cement, quantity: 250, rate: 400, total: 100000 },
+      { id: '2', name: 'Steel / TMT Rods', category: MATERIAL_CATEGORIES.STEEL, unit: MATERIAL_UNITS.steel, quantity: 1.5, rate: 65000, total: 97500 },
+      { id: '3', name: 'River Sand', category: MATERIAL_CATEGORIES.SAND, unit: MATERIAL_UNITS.sand, quantity: 600, rate: 80, total: 48000 },
+      { id: '4', name: 'M-Sand', category: MATERIAL_CATEGORIES.MSAND, unit: MATERIAL_UNITS.mSand, quantity: 900, rate: 60, total: 54000 },
+      { id: '5', name: '20mm Jalli', category: MATERIAL_CATEGORIES.JALLI_20, unit: MATERIAL_UNITS.jalli20, quantity: 800, rate: 64, total: 51200 }
+    ],
+    summary: {
+      materialTotal: 350700,
+      labourCost: 100000,
+      contractorMargin: 10,
+      wastage: 5,
+      transportation: 30000,
+      miscellaneous: 19300,
+      grandTotal: 500000,
+    },
+    version: 1,
+    createdAt: "2026-06-02T10:00:00.000Z",
+    updatedAt: "2026-06-02T10:00:00.000Z",
+  },
+  {
+    id: "mock-3",
+    details: {
+      projectName: "Anna Nagar Apartment Interior",
+      clientName: "Meena Krishnan",
+      location: "Chennai",
+      date: "2026-06-03",
+      projectType: "interior",
+      builtUpArea: 1200,
+      floors: 1,
+      foundationType: "Isolated Footing",
+      wallThickness: "9 inch",
+      slabThickness: "5 inch",
+      rooms: 3,
+      bathrooms: 2,
+      staircase: false,
+      parking: false,
+    },
+    materials: [
+      { id: '1', name: 'Cement', category: MATERIAL_CATEGORIES.CEMENT, unit: MATERIAL_UNITS.cement, quantity: 200, rate: 400, total: 80000 },
+      { id: '2', name: 'Steel / TMT Rods', category: MATERIAL_CATEGORIES.STEEL, unit: MATERIAL_UNITS.steel, quantity: 1.2, rate: 65000, total: 78000 },
+      { id: '3', name: 'River Sand', category: MATERIAL_CATEGORIES.SAND, unit: MATERIAL_UNITS.sand, quantity: 500, rate: 80, total: 40000 },
+      { id: '4', name: 'M-Sand', category: MATERIAL_CATEGORIES.MSAND, unit: MATERIAL_UNITS.mSand, quantity: 800, rate: 60, total: 48000 },
+      { id: '5', name: '20mm Jalli', category: MATERIAL_CATEGORIES.JALLI_20, unit: MATERIAL_UNITS.jalli20, quantity: 600, rate: 64, total: 38400 },
+      { id: '10', name: 'Paint', category: MATERIAL_CATEGORIES.FINISHING, unit: MATERIAL_UNITS.paint, quantity: 100, rate: 200, total: 20000 }
+    ],
+    summary: {
+      materialTotal: 304400,
+      labourCost: 90000,
+      contractorMargin: 10,
+      wastage: 5,
+      transportation: 35600,
+      miscellaneous: 20000,
+      grandTotal: 450000,
+    },
+    version: 1,
+    createdAt: "2026-06-03T10:00:00.000Z",
+    updatedAt: "2026-06-03T10:00:00.000Z",
+  }
+];
+
 export const useEstimateStore = create<EstimateStore>()(
   persist(
     (set, get) => ({
-      estimates: [],
+      estimates: MOCK_ESTIMATES,
       currentEstimate: null,
       rateLibrary: INITIAL_RATES,
 
@@ -104,6 +222,7 @@ export const useEstimateStore = create<EstimateStore>()(
             id: newId,
             version: estimate.version + 1,
             details: { ...estimate.details, projectName: `${estimate.details.projectName} (Copy)` },
+            materials: estimate.materials.map(m => ({ ...m })),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           };

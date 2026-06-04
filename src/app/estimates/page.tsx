@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Plus, Search, Calendar, MapPin, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEstimateStore } from "@/store/useEstimateStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 
 export default function EstimatesList() {
+  const router = useRouter();
   const { estimates } = useEstimateStore();
   const [search, setSearch] = useState("");
 
@@ -62,16 +64,31 @@ export default function EstimatesList() {
                     <MapPin className="w-3.5 h-3.5" />
                     {estimate.details.location}
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <div className="flex items-center gap-2 text-xs text-slate-400" suppressHydrationWarning>
                     <Calendar className="w-3.5 h-3.5" />
                     {format(new Date(estimate.details.date), "MMMM d, yyyy")}
                   </div>
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 rounded-lg border-slate-200 text-xs">View BOQ</Button>
-                  <Button variant="outline" className="flex-1 rounded-lg border-slate-200 text-xs">Edit</Button>
-                  <Button className="bg-slate-50 hover:bg-navy hover:text-white text-navy rounded-lg p-2 transition-all">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 rounded-lg border-slate-200 text-xs"
+                    onClick={() => router.push(`/estimate/new?id=${estimate.id}&tab=boq`)}
+                  >
+                    View BOQ
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 rounded-lg border-slate-200 text-xs"
+                    onClick={() => router.push(`/estimate/new?id=${estimate.id}`)}
+                  >
+                    Edit
+                  </Button>
+                  <Button 
+                    className="bg-slate-50 hover:bg-navy hover:text-white text-navy rounded-lg p-2 transition-all"
+                    onClick={() => router.push(`/estimate/new?id=${estimate.id}`)}
+                  >
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                 </div>

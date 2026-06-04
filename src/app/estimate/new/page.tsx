@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -46,10 +46,14 @@ import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import * as XLSX from "xlsx";
 
-export default function NewEstimate() {
+function NewEstimateForm() {
   const router = useRouter();
-  const { addEstimate, calculateQuantities } = useEstimateStore();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("id");
+  const tabParam = searchParams.get("tab");
+  const { estimates, addEstimate, updateEstimate, calculateQuantities } = useEstimateStore();
   const [activeTab, setActiveTab] = useState("details");
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
   
   // Progress state
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
@@ -86,13 +90,36 @@ export default function NewEstimate() {
     grandTotal: 0,
   });
 
-  // Auto-calculate quantities when details change
+  // Load existing estimate data if editing
   useEffect(() => {
+    if (editId && estimates.length > 0 && !isDataLoaded) {
+      const existing = estimates.find(e => e.id === editId);
+      if (existing) {
+        setDetails(existing.details);
+        setMaterials(existing.materials);
+        setSummary(existing.summary);
+        setIsDataLoaded(true);
+      }
+    }
+  }, [editId, estimates, isDataLoaded]);
+
+  // Set active tab if tab param is present
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  // Auto-calculate quantities when details change (skip if loading initial edit data)
+  useEffect(() => {
+    if (editId && !isDataLoaded) {
+      return;
+    }
     if (details.builtUpArea > 0) {
       const initialMaterials = calculateQuantities(details);
       setMaterials(initialMaterials);
     }
-  }, [details.builtUpArea, details.projectType]);
+  }, [details.builtUpArea, details.projectType, editId, isDataLoaded]);
 
   // Calculate totals whenever materials or summary factors change
   useEffect(() => {
@@ -133,17 +160,26 @@ export default function NewEstimate() {
   };
 
   const handleSave = () => {
-    const newEstimate = {
-      id: crypto.randomUUID(),
-      details,
-      materials,
-      summary,
-      version: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    addEstimate(newEstimate);
-    toast.success("Estimate saved successfully!");
+    if (editId) {
+      updateEstimate(editId, {
+        details,
+        materials,
+        summary,
+      });
+      toast.success("Estimate updated successfully!");
+    } else {
+      const newEstimate = {
+        id: crypto.randomUUID(),
+        details,
+        materials,
+        summary,
+        version: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      addEstimate(newEstimate);
+      toast.success("Estimate saved successfully!");
+    }
     router.push("/");
   };
 
@@ -693,6 +729,14 @@ export default function NewEstimate() {
         </div>
       </Tabs>
     </div>
+  );
+}
+
+export default function NewEstimate() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-500 font-semibold">Loading estimate details...</div>}>
+      <NewEstimateForm />
+    </Suspense>
   );
 }
 
