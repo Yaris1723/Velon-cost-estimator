@@ -136,13 +136,34 @@ function NewEstimateForm() {
   }, [materials, summary.labourCost, summary.contractorMargin, summary.wastage, summary.transportation, summary.miscellaneous]);
 
   const handleDetailChange = (field: keyof ProjectDetails, value: any) => {
-    setDetails(prev => ({ ...prev, [field]: value }));
+    let sanitizedValue = value;
+    if (field === 'builtUpArea') {
+      sanitizedValue = Math.max(0, Number(value));
+    } else if (field === 'floors') {
+      sanitizedValue = Math.max(1, Number(value));
+    }
+    setDetails(prev => ({ ...prev, [field]: sanitizedValue }));
   };
 
   const handleMaterialChange = (id: string, field: 'quantity' | 'rate' | 'category' | 'name', value: any) => {
-    setMaterials(prev => prev.map(item => 
-      item.id === id ? { ...item, [field]: value, total: (field === 'quantity' || field === 'rate') ? (field === 'quantity' ? Number(value) * item.rate : item.quantity * Number(value)) : item.total } : item
-    ));
+    let sanitizedValue = value;
+    if (field === 'quantity' || field === 'rate') {
+      sanitizedValue = Math.max(0, Number(value));
+    }
+    setMaterials(prev => prev.map(item => {
+      if (item.id === id) {
+        const updated = { ...item, [field]: sanitizedValue };
+        if (field === 'quantity' || field === 'rate') {
+          updated.total = updated.quantity * updated.rate;
+        }
+        return updated;
+      }
+      return item;
+    }));
+  };
+
+  const handleSummaryChange = (field: keyof typeof summary, value: number) => {
+    setSummary(prev => ({ ...prev, [field]: Math.max(0, value) }));
   };
 
   const addCustomMaterial = () => {
@@ -386,6 +407,7 @@ function NewEstimateForm() {
                       <Input 
                         type="number" 
                         placeholder="0" 
+                        min="0"
                         className="h-12 border-slate-200 font-bold text-lg rounded-xl"
                         value={details.builtUpArea || ""}
                         onChange={(e) => handleDetailChange('builtUpArea', Number(e.target.value))}
@@ -395,6 +417,7 @@ function NewEstimateForm() {
                       <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Number of Floors</Label>
                       <Input 
                         type="number" 
+                        min="1"
                         className="h-12 border-slate-200 rounded-xl"
                         value={details.floors}
                         onChange={(e) => handleDetailChange('floors', Number(e.target.value))}
@@ -485,6 +508,7 @@ function NewEstimateForm() {
                         <TableCell>
                           <Input 
                             type="number" 
+                            min="0"
                             className="w-28 h-10 border-slate-200 focus:bg-white rounded-lg font-semibold"
                             value={item.quantity}
                             onChange={(e) => handleMaterialChange(item.id, 'quantity', Number(e.target.value))}
@@ -550,6 +574,7 @@ function NewEstimateForm() {
                             <span className="text-slate-400 font-medium">₹</span>
                             <Input 
                               type="number" 
+                              min="0"
                               className="w-28 h-10 border-slate-200 rounded-lg font-bold text-navy"
                               value={item.rate}
                               onChange={(e) => handleMaterialChange(item.id, 'rate', Number(e.target.value))}
@@ -666,8 +691,9 @@ function NewEstimateForm() {
                       <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Labour Cost (INR)</Label>
                       <Input 
                         type="number" 
+                        min="0"
                         value={summary.labourCost} 
-                        onChange={(e) => setSummary(s => ({...s, labourCost: Number(e.target.value)}))}
+                        onChange={(e) => handleSummaryChange('labourCost', Number(e.target.value))}
                         className="h-11 rounded-lg font-bold text-navy"
                       />
                     </div>
@@ -675,8 +701,9 @@ function NewEstimateForm() {
                       <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Contractor Margin (%)</Label>
                       <Input 
                         type="number" 
+                        min="0"
                         value={summary.contractorMargin} 
-                        onChange={(e) => setSummary(s => ({...s, contractorMargin: Number(e.target.value)}))}
+                        onChange={(e) => handleSummaryChange('contractorMargin', Number(e.target.value))}
                         className="h-11 rounded-lg"
                       />
                     </div>
@@ -684,8 +711,9 @@ function NewEstimateForm() {
                       <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Wastage Buffer (%)</Label>
                       <Input 
                         type="number" 
+                        min="0"
                         value={summary.wastage} 
-                        onChange={(e) => setSummary(s => ({...s, wastage: Number(e.target.value)}))}
+                        onChange={(e) => handleSummaryChange('wastage', Number(e.target.value))}
                         className="h-11 rounded-lg"
                       />
                     </div>
@@ -693,8 +721,9 @@ function NewEstimateForm() {
                       <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Transportation (INR)</Label>
                       <Input 
                         type="number" 
+                        min="0"
                         value={summary.transportation} 
-                        onChange={(e) => setSummary(s => ({...s, transportation: Number(e.target.value)}))}
+                        onChange={(e) => handleSummaryChange('transportation', Number(e.target.value))}
                         className="h-11 rounded-lg"
                       />
                     </div>

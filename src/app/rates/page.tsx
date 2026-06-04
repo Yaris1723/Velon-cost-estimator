@@ -18,6 +18,24 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
+const MATERIAL_KEY_TO_CATEGORY: Record<string, string> = {
+  cement: MATERIAL_CATEGORIES.CEMENT,
+  steel: MATERIAL_CATEGORIES.STEEL,
+  sand: MATERIAL_CATEGORIES.SAND,
+  mSand: MATERIAL_CATEGORIES.MSAND,
+  jalli40: MATERIAL_CATEGORIES.JALLI_40,
+  jalli20: MATERIAL_CATEGORIES.JALLI_20,
+  jalli12: MATERIAL_CATEGORIES.JALLI_12,
+  bricks: MATERIAL_CATEGORIES.MASONRY,
+  tiles: MATERIAL_CATEGORIES.FINISHING,
+  paint: MATERIAL_CATEGORIES.FINISHING,
+  putty: MATERIAL_CATEGORIES.FINISHING,
+  electrical: MATERIAL_CATEGORIES.ELECTRICAL,
+  plumbing: MATERIAL_CATEGORIES.PLUMBING,
+  doors: "Woodwork",
+  windows: "Fabrication",
+};
+
 export default function MarketRates() {
   const { rateLibrary, updateRateLibrary } = useEstimateStore();
   const [search, setSearch] = useState("");
@@ -27,7 +45,7 @@ export default function MarketRates() {
   );
 
   const handleRateChange = (key: string, value: string) => {
-    updateRateLibrary(key, Number(value));
+    updateRateLibrary(key, Math.max(0, Number(value)));
   };
 
   const saveRates = () => {
@@ -79,9 +97,7 @@ export default function MarketRates() {
                     <TableCell className="pl-8 py-4 font-medium capitalize text-navy">{key.replace(/([A-Z0-9])/g, ' $1')}</TableCell>
                     <TableCell>
                        <span className="text-xs text-slate-400 italic">
-                         {key.toUpperCase().includes('SAND') ? MATERIAL_CATEGORIES.SAND : 
-                          key.toUpperCase().includes('JALLI') ? 'Aggregate' : 
-                          key.toUpperCase().includes('CEMENT') ? MATERIAL_CATEGORIES.CEMENT : 'General'}
+                         {MATERIAL_KEY_TO_CATEGORY[key] || 'General'}
                        </span>
                     </TableCell>
                     <TableCell>
@@ -95,6 +111,7 @@ export default function MarketRates() {
                             className="w-32 h-11 border-slate-200 text-right font-bold text-navy rounded-lg focus:border-gold transition-all"
                             value={rateLibrary[key]}
                             onChange={(e) => handleRateChange(key, e.target.value)}
+                            min="0"
                          />
                       </div>
                     </TableCell>
