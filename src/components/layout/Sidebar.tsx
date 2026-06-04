@@ -19,7 +19,7 @@ const NAV_ITEMS = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "New Estimate", href: "/estimate/new", icon: PlusCircle },
   { name: "Saved Estimates", href: "/estimates", icon: History },
-  { name: "BOQ Reports", href: "/reports", icon: FileText },
+  { name: "BOQ Reports", href: "/estimates", icon: FileText },
   { name: "Market Rates", href: "/rates", icon: TrendingUp },
 ];
 

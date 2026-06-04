@@ -99,7 +99,7 @@ export default function Dashboard() {
       <Card className="border-none shadow-sm premium-shadow">
         <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-50 mb-4 px-8 pt-8">
           <CardTitle className="text-xl font-bold flex items-center gap-2">
-            Recent Estimates
+            Estimates
             <Badge variant="outline" className="ml-2 font-normal">{filteredEstimates.length}</Badge>
           </CardTitle>
           <div className="flex items-center gap-4">
@@ -131,7 +131,11 @@ export default function Dashboard() {
                 filteredEstimates.map((estimate) => (
                   <TableRow key={estimate.id} className="group hover:bg-slate-50/50 transition-colors border-slate-50">
                     <TableCell>
-                      <div className="font-semibold text-navy">{estimate.details.projectName}</div>
+                      <Link href={`/estimate/new?id=${estimate.id}`}>
+                        <div className="font-semibold text-navy cursor-pointer hover:text-gold hover:underline transition-colors">
+                          {estimate.details.projectName}
+                        </div>
+                      </Link>
                       <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                         <Calendar className="w-3 h-3" />
                         V{estimate.version} • {estimate.details.location}
