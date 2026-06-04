@@ -11,6 +11,7 @@ interface AuthStore {
   user: User | null;
   login: (email: string, name: string) => void;
   logout: () => void;
+  updateProfile: (email: string, name: string) => void;
 }
 
 export const useAuthStore = create<AuthStore>()(
@@ -28,6 +29,10 @@ export const useAuthStore = create<AuthStore>()(
         isAuthenticated: false,
         user: null,
       }),
+
+      updateProfile: (email, name) => set((state) => ({
+        user: state.user ? { ...state.user, email, name } : null
+      })),
     }),
     {
       name: 'velon-auth-storage',
