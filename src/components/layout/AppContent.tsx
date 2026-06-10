@@ -1,7 +1,6 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import React, { useEffect, useState, useSyncExternalStore } from "react";
+import React, { useEffect, useState, useSyncExternalStore, Suspense } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import Sidebar from "@/components/layout/Sidebar";
 import LoginPage from "@/app/login/page";
@@ -83,7 +82,9 @@ export default function AppContent({ children }: { children: React.ReactNode }) 
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         } md:fixed md:inset-y-0 md:left-0 md:z-30`}
       >
-        <Sidebar onCloseMobile={() => setIsMobileMenuOpen(false)} />
+        <Suspense fallback={<div className="w-full h-full bg-navy" />}>
+          <Sidebar onCloseMobile={() => setIsMobileMenuOpen(false)} />
+        </Suspense>
       </aside>
 
       {/* Backdrop overlay for mobile drawer */}

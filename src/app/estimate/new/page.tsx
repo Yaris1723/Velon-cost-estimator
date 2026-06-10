@@ -394,22 +394,30 @@ function NewEstimateForm() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-4 w-full h-16 bg-white p-1 rounded-2xl shadow-sm premium-shadow border border-slate-100">
-          <TabsTrigger value="details" className="rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all gap-2 text-xs md:text-sm">
-            <div className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-[10px] shrink-0">1</div>
-            <span className="hidden sm:inline">Project Details</span>
+        <TabsList variant="custom" className="grid grid-cols-4 w-full h-16 bg-white p-1 rounded-2xl shadow-sm premium-shadow border border-slate-100">
+          <TabsTrigger value="details" className="group rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all text-xs md:text-sm">
+            <div className="flex items-center justify-center gap-2 w-full h-full">
+              <span className="w-5 h-5 rounded-full border border-current flex items-center justify-center text-[10px] font-bold shrink-0 leading-none">1</span>
+              <span className="hidden group-data-[active]:inline group-data-[state=active]:inline lg:inline font-medium">Project Details</span>
+            </div>
           </TabsTrigger>
-          <TabsTrigger value="quantities" className="rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all gap-2 text-xs md:text-sm">
-             <div className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-[10px] shrink-0">2</div>
-            <span className="hidden sm:inline">Quantities</span>
+          <TabsTrigger value="quantities" className="group rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all text-xs md:text-sm">
+            <div className="flex items-center justify-center gap-2 w-full h-full">
+              <span className="w-5 h-5 rounded-full border border-current flex items-center justify-center text-[10px] font-bold shrink-0 leading-none">2</span>
+              <span className="hidden group-data-[active]:inline group-data-[state=active]:inline lg:inline font-medium">Quantities</span>
+            </div>
           </TabsTrigger>
-          <TabsTrigger value="pricing" className="rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all gap-2 text-xs md:text-sm">
-             <div className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-[10px] shrink-0">3</div>
-            <span className="hidden sm:inline">Rates & Pricing</span>
+          <TabsTrigger value="pricing" className="group rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all text-xs md:text-sm">
+            <div className="flex items-center justify-center gap-2 w-full h-full">
+              <span className="w-5 h-5 rounded-full border border-current flex items-center justify-center text-[10px] font-bold shrink-0 leading-none">3</span>
+              <span className="hidden group-data-[active]:inline group-data-[state=active]:inline lg:inline font-medium">Rates & Pricing</span>
+            </div>
           </TabsTrigger>
-          <TabsTrigger value="boq" className="rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all gap-2 text-xs md:text-sm">
-             <div className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-[10px] shrink-0">4</div>
-            <span className="hidden sm:inline">BOQ Summary</span>
+          <TabsTrigger value="boq" className="group rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all text-xs md:text-sm">
+            <div className="flex items-center justify-center gap-2 w-full h-full">
+              <span className="w-5 h-5 rounded-full border border-current flex items-center justify-center text-[10px] font-bold shrink-0 leading-none">4</span>
+              <span className="hidden group-data-[active]:inline group-data-[state=active]:inline lg:inline font-medium">BOQ Summary</span>
+            </div>
           </TabsTrigger>
         </TabsList>
 

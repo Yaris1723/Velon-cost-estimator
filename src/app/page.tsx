@@ -40,8 +40,15 @@ import { toast } from "sonner";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { estimates, duplicateEstimate, deleteEstimate } = useEstimateStore();
+  const { estimates, duplicateEstimate, deleteEstimate, clearAllData } = useEstimateStore();
   const [search, setSearch] = useState("");
+
+  const handleResetData = () => {
+    if (confirm("Are you sure you want to reset all dashboard data? This will permanently delete all estimates and custom rates.")) {
+      clearAllData();
+      toast.success("All dashboard data has been reset.");
+    }
+  };
 
   // Seeding useEffect removed to allow clean slate dashboard
 
@@ -67,12 +74,23 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold text-navy">Welcome back, Admin</h1>
           <p className="text-muted-foreground mt-1">Manage your construction estimates and BOQs.</p>
         </div>
-        <Link href="/estimate/new">
-          <Button className="bg-navy hover:bg-navy/90 text-white gap-2 px-6 py-6 rounded-xl shadow-lg shadow-navy/10 transition-all hover:scale-[1.02]">
-            <Plus className="w-5 h-5" />
-            Create New Estimate
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          {estimates.length > 0 && (
+            <Button 
+              variant="outline" 
+              onClick={handleResetData}
+              className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 h-12 px-5 rounded-xl transition-all"
+            >
+              Reset All Data
+            </Button>
+          )}
+          <Link href="/estimate/new">
+            <Button className="bg-navy hover:bg-navy/90 text-white gap-2 h-12 px-6 rounded-xl shadow-lg shadow-navy/10 transition-all hover:scale-[1.02]">
+              <Plus className="w-5 h-5" />
+              Create New Estimate
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

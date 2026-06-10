@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { 
   LayoutDashboard, 
   PlusCircle, 
@@ -35,7 +35,7 @@ const NAV_ITEMS = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "New Estimate", href: "/estimate/new", icon: PlusCircle },
   { name: "Saved Estimates", href: "/estimates", icon: History },
-  { name: "BOQ Reports", href: "/estimates", icon: FileText },
+  { name: "BOQ Reports", href: "/estimates?view=boq", icon: FileText },
   { name: "Market Rates", href: "/rates", icon: TrendingUp },
 ];
 
@@ -45,6 +45,9 @@ interface SidebarProps {
 
 export default function Sidebar({ onCloseMobile }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const view = searchParams.get("view");
+  
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const updateProfile = useAuthStore((state) => state.updateProfile);
@@ -101,7 +104,17 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
 
       <nav className="flex-1 px-4 mt-6 space-y-1">
         {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href;
+          const isBOQReportItem = item.name === "BOQ Reports";
+          const isSavedEstimateItem = item.name === "Saved Estimates";
+          
+          let isActive = false;
+          if (isBOQReportItem) {
+            isActive = pathname === "/estimates" && view === "boq";
+          } else if (isSavedEstimateItem) {
+            isActive = pathname === "/estimates" && view !== "boq";
+          } else {
+            isActive = pathname === item.href;
+          }
           return (
             <Link
               key={item.name}
