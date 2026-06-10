@@ -20,6 +20,7 @@ import { useEstimateStore } from "@/store/useEstimateStore";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -41,7 +42,7 @@ import { toast } from "sonner";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { estimates, duplicateEstimate, deleteEstimate, clearAllData } = useEstimateStore();
+  const { estimates, duplicateEstimate, deleteEstimate, clearAllData, updateEstimateStatus } = useEstimateStore();
   const [search, setSearch] = useState("");
 
   const handleResetData = () => {
@@ -69,13 +70,17 @@ export default function Dashboard() {
     e.details.location.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalValue = estimates.reduce((sum, e) => sum + e.summary.grandTotal, 0);
+  const totalProposalValue = estimates.reduce((sum, e) => sum + e.summary.grandTotal, 0);
+  const generatedRevenue = estimates
+    .filter(e => e.status === "approved")
+    .reduce((sum, e) => sum + e.summary.grandTotal, 0);
+  const activeProjectsCount = estimates.filter(e => e.status === "approved" || e.status === "on_hold").length;
 
   const stats = [
     { name: "Total Estimates", value: String(estimates.length).padStart(2, '0'), icon: FileText, color: "text-blue-600" },
-    { name: "Total Value (INR)", value: `₹${totalValue.toLocaleString()}`, icon: TrendingUp, color: "text-green-600" },
-    { name: "Active Projects", value: String(estimates.length).padStart(2, '0'), icon: CheckCircle2, color: "text-gold" },
-    { name: "New Clients", value: String(new Set(estimates.map(e => e.details.clientName)).size).padStart(2, '0'), icon: Users, color: "text-orange-600" },
+    { name: "Proposal Value (INR)", value: `₹${totalProposalValue.toLocaleString()}`, icon: TrendingUp, color: "text-orange-500" },
+    { name: "Revenue Earned (INR)", value: `₹${generatedRevenue.toLocaleString()}`, icon: TrendingUp, color: "text-green-600" },
+    { name: "Active Projects", value: String(activeProjectsCount).padStart(2, '0'), icon: CheckCircle2, color: "text-gold" },
   ];
 
   return (
@@ -171,7 +176,55 @@ export default function Dashboard() {
                       <TableCell className="text-slate-500" suppressHydrationWarning>{format(new Date(estimate.details.date), "MMM d, yyyy")}</TableCell>
                       <TableCell className="font-bold text-navy">₹{estimate.summary.grandTotal.toLocaleString()}</TableCell>
                       <TableCell>
-                        <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border-emerald-100 font-medium px-3">Completed</Badge>
+                        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
+                          {/* Current Status Badge */}
+                          <div className="w-24 shrink-0">
+                            {estimate.status === 'approved' && <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border-emerald-100 font-bold px-3 py-0.5 w-full justify-center">Approved</Badge>}
+                            {estimate.status === 'on_hold' && <Badge className="bg-amber-50 text-amber-600 hover:bg-amber-50 border-amber-100 font-bold px-3 py-0.5 w-full justify-center">On Hold</Badge>}
+                            {estimate.status === 'declined' && <Badge className="bg-rose-50 text-rose-600 hover:bg-rose-50 border-rose-100 font-bold px-3 py-0.5 w-full justify-center">Declined</Badge>}
+                            {(!estimate.status || estimate.status === 'pending') && <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-50 border-blue-100 font-bold px-3 py-0.5 w-full justify-center">Pending</Badge>}
+                          </div>
+                          
+                          {/* Quick Change Action Buttons */}
+                          <div className="flex items-center gap-1 opacity-60 hover:opacity-100 transition-opacity">
+                            <button
+                              title="Mark as Approved"
+                              onClick={() => updateEstimateStatus(estimate.id, 'approved')}
+                              className={cn(
+                                "w-6 h-6 flex items-center justify-center rounded-md border text-[10px] font-bold transition-all hover:scale-105",
+                                estimate.status === 'approved'
+                                  ? "bg-emerald-600 text-white border-emerald-600"
+                                  : "bg-white text-slate-400 border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200"
+                              )}
+                            >
+                              A
+                            </button>
+                            <button
+                              title="Mark as On Hold"
+                              onClick={() => updateEstimateStatus(estimate.id, 'on_hold')}
+                              className={cn(
+                                "w-6 h-6 flex items-center justify-center rounded-md border text-[10px] font-bold transition-all hover:scale-105",
+                                estimate.status === 'on_hold'
+                                  ? "bg-amber-500 text-white border-amber-500"
+                                  : "bg-white text-slate-400 border-slate-200 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200"
+                              )}
+                            >
+                              H
+                            </button>
+                            <button
+                              title="Mark as Declined"
+                              onClick={() => updateEstimateStatus(estimate.id, 'declined')}
+                              className={cn(
+                                "w-6 h-6 flex items-center justify-center rounded-md border text-[10px] font-bold transition-all hover:scale-105",
+                                estimate.status === 'declined'
+                                  ? "bg-rose-600 text-white border-rose-600"
+                                  : "bg-white text-slate-400 border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200"
+                              )}
+                            >
+                              D
+                            </button>
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>

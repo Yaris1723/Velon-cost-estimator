@@ -43,6 +43,7 @@ export interface Estimate {
     grandTotal: number;
   };
   version: number;
+  status?: 'approved' | 'declined' | 'on_hold' | 'pending';
   createdAt: string;
   updatedAt: string;
 }
@@ -68,6 +69,7 @@ interface EstimateStore {
   setCurrentEstimate: (estimate: Estimate | null) => void;
   duplicateEstimate: (id: string) => void;
   updateRateLibrary: (key: string, rate: number) => void;
+  updateEstimateStatus: (id: string, status: 'approved' | 'declined' | 'on_hold' | 'pending') => void;
   
   // Custom materials
   addCustomMaterialRate: (material: Omit<CustomMaterial, 'id' | 'key'>, rate: number) => void;
@@ -226,6 +228,15 @@ export const useEstimateStore = create<EstimateStore>()(
 
       updateRateLibrary: (key, rate) => set((state) => ({
         rateLibrary: { ...state.rateLibrary, [key]: rate }
+      })),
+
+      updateEstimateStatus: (id, status) => set((state) => ({
+        estimates: state.estimates.map((e) => 
+          e.id === id ? { ...e, status, updatedAt: new Date().toISOString() } : e
+        ),
+        currentEstimate: state.currentEstimate?.id === id 
+          ? { ...state.currentEstimate, status, updatedAt: new Date().toISOString() } 
+          : state.currentEstimate
       })),
 
       duplicateEstimate: (id) => {

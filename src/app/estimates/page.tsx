@@ -10,11 +10,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 function EstimatesListContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { estimates } = useEstimateStore();
+  const { estimates, updateEstimateStatus } = useEstimateStore();
   const [search, setSearch] = useState("");
 
   const view = searchParams.get("view");
@@ -67,16 +68,22 @@ function EstimatesListContent() {
                 <div className="h-2 bg-navy" />
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-4">
-                    <Badge className="bg-slate-100 text-slate-600 hover:bg-slate-100 font-medium">V{estimate.version}</Badge>
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      <Badge className="bg-slate-100 text-slate-600 hover:bg-slate-100 font-medium">V{estimate.version}</Badge>
+                      {estimate.status === 'approved' && <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 font-bold px-2 py-0.5 text-[10px]">Approved</Badge>}
+                      {estimate.status === 'on_hold' && <Badge className="bg-amber-50 text-amber-600 border-amber-100 font-bold px-2 py-0.5 text-[10px]">On Hold</Badge>}
+                      {estimate.status === 'declined' && <Badge className="bg-rose-50 text-rose-600 border-rose-100 font-bold px-2 py-0.5 text-[10px]">Declined</Badge>}
+                      {(!estimate.status || estimate.status === 'pending') && <Badge className="bg-blue-50 text-blue-600 border-blue-100 font-bold px-2 py-0.5 text-[10px]">Pending</Badge>}
+                    </div>
                     <span className="text-xl font-black text-navy">₹{estimate.summary.grandTotal.toLocaleString()}</span>
                   </div>
                   
                   <Link href={projectLink}>
                     <h3 className="text-lg font-bold text-navy hover:text-gold hover:underline transition-colors cursor-pointer">{estimate.details.projectName}</h3>
                   </Link>
-                  <p className="text-sm text-slate-500 mb-6">{estimate.details.clientName}</p>
+                  <p className="text-sm text-slate-500 mb-4">{estimate.details.clientName}</p>
 
-                  <div className="space-y-3 mb-8">
+                  <div className="space-y-3 mb-4">
                     <div className="flex items-center gap-2 text-xs text-slate-400">
                       <MapPin className="w-3.5 h-3.5" />
                       {estimate.details.location}
@@ -84,6 +91,49 @@ function EstimatesListContent() {
                     <div className="flex items-center gap-2 text-xs text-slate-400" suppressHydrationWarning>
                       <Calendar className="w-3.5 h-3.5" />
                       {format(new Date(estimate.details.date), "MMMM d, yyyy")}
+                    </div>
+                  </div>
+
+                  {/* Status Toggle Buttons */}
+                  <div className="border-t border-slate-100 pt-4 mb-4">
+                    <div className="text-xs font-semibold text-slate-500 mb-2">Project Status</div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        title="Mark as Approved"
+                        onClick={() => updateEstimateStatus(estimate.id, estimate.status === 'approved' ? 'pending' : 'approved')}
+                        className={cn(
+                          "flex-1 py-1.5 rounded-lg border text-[11px] font-bold transition-all hover:scale-102 flex justify-center items-center gap-1",
+                          estimate.status === 'approved'
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-white text-slate-500 border-slate-200 hover:bg-emerald-50/50 hover:text-emerald-600"
+                        )}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Approve
+                      </button>
+                      <button
+                        title="Mark as On Hold"
+                        onClick={() => updateEstimateStatus(estimate.id, estimate.status === 'on_hold' ? 'pending' : 'on_hold')}
+                        className={cn(
+                          "flex-1 py-1.5 rounded-lg border text-[11px] font-bold transition-all hover:scale-102 flex justify-center items-center gap-1",
+                          estimate.status === 'on_hold'
+                            ? "bg-amber-50 text-amber-700 border-amber-200"
+                            : "bg-white text-slate-500 border-slate-200 hover:bg-amber-50/50 hover:text-amber-600"
+                        )}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Hold
+                      </button>
+                      <button
+                        title="Mark as Declined"
+                        onClick={() => updateEstimateStatus(estimate.id, estimate.status === 'declined' ? 'pending' : 'declined')}
+                        className={cn(
+                          "flex-1 py-1.5 rounded-lg border text-[11px] font-bold transition-all hover:scale-102 flex justify-center items-center gap-1",
+                          estimate.status === 'declined'
+                            ? "bg-rose-50 text-rose-700 border-rose-200"
+                            : "bg-white text-slate-500 border-slate-200 hover:bg-rose-50/50 hover:text-rose-600"
+                        )}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> Decline
+                      </button>
                     </div>
                   </div>
 
