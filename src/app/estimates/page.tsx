@@ -56,7 +56,9 @@ export default function EstimatesList() {
                   <span className="text-xl font-black text-navy">₹{estimate.summary.grandTotal.toLocaleString()}</span>
                 </div>
                 
-                <h3 className="text-lg font-bold text-navy group-hover:text-gold transition-colors">{estimate.details.projectName}</h3>
+                <Link href={`/estimate/new?id=${estimate.id}`}>
+                  <h3 className="text-lg font-bold text-navy hover:text-gold hover:underline transition-colors cursor-pointer">{estimate.details.projectName}</h3>
+                </Link>
                 <p className="text-sm text-slate-500 mb-6">{estimate.details.clientName}</p>
 
                 <div className="space-y-3 mb-8">

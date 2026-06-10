@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { HardHat, Lock, Mail, ArrowRight } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { toast } from "sonner";
 
 export default function LoginPage() {
   const login = useAuthStore((state) => state.login);
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +26,7 @@ export default function LoginPage() {
       if (email === "admin@velon.com" && password === "admin123") {
         login(email, "Admin Velon");
         toast.success("Welcome back, Admin Velon!");
+        router.push("/");
       } else {
         toast.error("Invalid email or password");
       }

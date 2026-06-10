@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
@@ -16,7 +16,7 @@ import {
   CheckCircle2,
   Calendar
 } from "lucide-react";
-import { useEstimateStore, MOCK_ESTIMATES } from "@/store/useEstimateStore";
+import { useEstimateStore } from "@/store/useEstimateStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -40,14 +40,10 @@ import { toast } from "sonner";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { estimates, duplicateEstimate, deleteEstimate, addEstimate } = useEstimateStore();
+  const { estimates, duplicateEstimate, deleteEstimate } = useEstimateStore();
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    if (estimates.length === 0) {
-      MOCK_ESTIMATES.forEach(e => addEstimate(e));
-    }
-  }, [estimates.length, addEstimate]);
+  // Seeding useEffect removed to allow clean slate dashboard
 
   const filteredEstimates = estimates.filter(e => 
     e.details.clientName.toLowerCase().includes(search.toLowerCase()) ||
@@ -115,92 +111,94 @@ export default function Dashboard() {
           </div>
         </CardHeader>
         <CardContent className="px-6 pb-8">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent border-none">
-                <TableHead className="font-semibold text-navy">Project Name</TableHead>
-                <TableHead className="font-semibold text-navy">Client</TableHead>
-                <TableHead className="font-semibold text-navy">Date</TableHead>
-                <TableHead className="font-semibold text-navy">Value (INR)</TableHead>
-                <TableHead className="font-semibold text-navy">Status</TableHead>
-                <TableHead className="text-right"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredEstimates.length > 0 ? (
-                filteredEstimates.map((estimate) => (
-                  <TableRow key={estimate.id} className="group hover:bg-slate-50/50 transition-colors border-slate-50">
-                    <TableCell>
-                      <Link href={`/estimate/new?id=${estimate.id}`}>
-                        <div className="font-semibold text-navy cursor-pointer hover:text-gold hover:underline transition-colors">
-                          {estimate.details.projectName}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-none">
+                  <TableHead className="font-semibold text-navy">Project Name</TableHead>
+                  <TableHead className="font-semibold text-navy">Client</TableHead>
+                  <TableHead className="font-semibold text-navy">Date</TableHead>
+                  <TableHead className="font-semibold text-navy">Value (INR)</TableHead>
+                  <TableHead className="font-semibold text-navy">Status</TableHead>
+                  <TableHead className="text-right"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredEstimates.length > 0 ? (
+                  filteredEstimates.map((estimate) => (
+                    <TableRow key={estimate.id} className="group hover:bg-slate-50/50 transition-colors border-slate-50">
+                      <TableCell>
+                        <Link href={`/estimate/new?id=${estimate.id}`}>
+                          <div className="font-semibold text-navy cursor-pointer hover:text-gold hover:underline transition-colors">
+                            {estimate.details.projectName}
+                          </div>
+                        </Link>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <Calendar className="w-3 h-3" />
+                          V{estimate.version} • {estimate.details.location}
                         </div>
-                      </Link>
-                      <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                        <Calendar className="w-3 h-3" />
-                        V{estimate.version} • {estimate.details.location}
+                      </TableCell>
+                      <TableCell className="font-medium text-slate-700">{estimate.details.clientName}</TableCell>
+                      <TableCell className="text-slate-500" suppressHydrationWarning>{format(new Date(estimate.details.date), "MMM d, yyyy")}</TableCell>
+                      <TableCell className="font-bold text-navy">₹{estimate.summary.grandTotal.toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border-emerald-100 font-medium px-3">Completed</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white transition-colors" />
+                            }
+                          >
+                            <MoreHorizontal className="w-4 h-4 text-slate-500" />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48 p-2 rounded-xl border-slate-100">
+                            <DropdownMenuItem 
+                              className="gap-2 py-2.5 cursor-pointer rounded-lg"
+                              onClick={() => router.push(`/estimate/new?id=${estimate.id}`)}
+                            >
+                              <Eye className="w-4 h-4" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="gap-2 py-2.5 cursor-pointer rounded-lg"
+                              onClick={() => {
+                                duplicateEstimate(estimate.id);
+                                toast.success("Estimate duplicated successfully");
+                              }}
+                            >
+                              <Copy className="w-4 h-4" /> Duplicate
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="gap-2 py-2.5 cursor-pointer rounded-lg text-rose-600 focus:text-rose-600 focus:bg-rose-50"
+                              onClick={() => {
+                                deleteEstimate(estimate.id);
+                                toast.error("Estimate deleted");
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="h-64 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-3 opacity-40">
+                        <FileText className="w-12 h-12" />
+                        <p className="text-lg font-medium">No estimates found</p>
+                        <Link href="/estimate/new">
+                          <Button variant="outline" className="rounded-xl">Create your first estimate</Button>
+                        </Link>
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium text-slate-700">{estimate.details.clientName}</TableCell>
-                    <TableCell className="text-slate-500" suppressHydrationWarning>{format(new Date(estimate.details.date), "MMM d, yyyy")}</TableCell>
-                    <TableCell className="font-bold text-navy">₹{estimate.summary.grandTotal.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border-emerald-100 font-medium px-3">Completed</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-white transition-colors" />
-                          }
-                        >
-                          <MoreHorizontal className="w-4 h-4 text-slate-500" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48 p-2 rounded-xl border-slate-100">
-                          <DropdownMenuItem 
-                            className="gap-2 py-2.5 cursor-pointer rounded-lg"
-                            onClick={() => router.push(`/estimate/new?id=${estimate.id}`)}
-                          >
-                            <Eye className="w-4 h-4" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="gap-2 py-2.5 cursor-pointer rounded-lg"
-                            onClick={() => {
-                              duplicateEstimate(estimate.id);
-                              toast.success("Estimate duplicated successfully");
-                            }}
-                          >
-                            <Copy className="w-4 h-4" /> Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="gap-2 py-2.5 cursor-pointer rounded-lg text-rose-600 focus:text-rose-600 focus:bg-rose-50"
-                            onClick={() => {
-                              deleteEstimate(estimate.id);
-                              toast.error("Estimate deleted");
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-64 text-center">
-                    <div className="flex flex-col items-center justify-center space-y-3 opacity-40">
-                      <FileText className="w-12 h-12" />
-                      <p className="text-lg font-medium">No estimates found</p>
-                      <Link href="/estimate/new">
-                        <Button variant="outline" className="rounded-xl">Create your first estimate</Button>
-                      </Link>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

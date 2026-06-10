@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
-  Building2, 
   LayoutDashboard, 
   PlusCircle, 
   FileText, 
@@ -12,9 +11,11 @@ import {
   History,
   TrendingUp,
   HardHat,
-  LogOut
+  LogOut,
+  X
 } from "lucide-react";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useEstimateStore } from "@/store/useEstimateStore";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -38,21 +39,19 @@ const NAV_ITEMS = [
   { name: "Market Rates", href: "/rates", icon: TrendingUp },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  onCloseMobile?: () => void;
+}
+
+export default function Sidebar({ onCloseMobile }: SidebarProps) {
   const pathname = usePathname();
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
   const updateProfile = useAuthStore((state) => state.updateProfile);
+  const clearAllData = useEstimateStore((state) => state.clearAllData);
 
-  const [nameInput, setNameInput] = useState("");
-  const [emailInput, setEmailInput] = useState("");
-
-  useEffect(() => {
-    if (user) {
-      setNameInput(user.name);
-      setEmailInput(user.email);
-    }
-  }, [user]);
+  const [nameInput, setNameInput] = useState(user?.name || "");
+  const [emailInput, setEmailInput] = useState(user?.email || "");
 
   const handleLogout = () => {
     logout();
@@ -69,16 +68,35 @@ export default function Sidebar() {
     toast.success("Profile updated successfully!");
   };
 
+  const handleResetData = () => {
+    if (confirm("Are you sure you want to reset all data? This will delete all estimates and custom rates!")) {
+      clearAllData();
+      toast.success("Application data reset successfully!");
+    }
+  };
+
   return (
-    <div className="flex flex-col h-screen w-64 bg-navy text-white fixed left-0 top-0 border-r border-navy/20">
-      <div className="p-6 flex items-center gap-3">
-        <div className="p-2 bg-gold rounded-lg">
-          <HardHat className="w-6 h-6 text-navy" />
+    <div className="flex flex-col h-full w-full bg-navy text-white border-r border-navy/20">
+      <div className="p-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gold rounded-lg">
+            <HardHat className="w-6 h-6 text-navy" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Velon</h1>
+            <p className="text-[10px] text-gold uppercase tracking-widest font-semibold">Constructions</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">Velon</h1>
-          <p className="text-[10px] text-gold uppercase tracking-widest font-semibold">Constructions</p>
-        </div>
+        {onCloseMobile && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onCloseMobile}
+            className="text-white hover:bg-white/10 md:hidden"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        )}
       </div>
 
       <nav className="flex-1 px-4 mt-6 space-y-1">
@@ -88,6 +106,7 @@ export default function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={onCloseMobile}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
                 isActive 
@@ -134,7 +153,7 @@ export default function Sidebar() {
                   Edit Profile Settings
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleUpdateProfile} className="space-y-4 py-4">
+              <form key={user ? `${user.name}-${user.email}` : "no-user"} onSubmit={handleUpdateProfile} className="space-y-4 py-4">
                 <div className="space-y-2 text-left">
                   <Label htmlFor="profile-name" className="text-xs font-bold uppercase tracking-wider text-white/50">
                     Full Name
@@ -176,6 +195,21 @@ export default function Sidebar() {
                   </DialogClose>
                 </DialogFooter>
               </form>
+
+              <div className="pt-4 border-t border-white/10 mt-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-rose-500 mb-1">Danger Zone</h4>
+                <p className="text-[10px] text-white/50 mb-3">This will permanently delete all estimates and reset rates to standard defaults.</p>
+                <DialogClose render={
+                  <Button 
+                    type="button" 
+                    variant="destructive"
+                    onClick={handleResetData}
+                    className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl h-10 text-xs" 
+                  />
+                }>
+                  Reset All Application Data
+                </DialogClose>
+              </div>
             </DialogContent>
           </Dialog>
 

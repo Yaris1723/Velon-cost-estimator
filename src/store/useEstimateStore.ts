@@ -47,10 +47,19 @@ export interface Estimate {
   updatedAt: string;
 }
 
+export interface CustomMaterial {
+  id: string;
+  key: string;
+  name: string;
+  category: string;
+  unit: string;
+}
+
 interface EstimateStore {
   estimates: Estimate[];
   currentEstimate: Estimate | null;
   rateLibrary: Record<string, number>;
+  customMaterials: CustomMaterial[];
   
   // Actions
   addEstimate: (estimate: Estimate) => void;
@@ -59,6 +68,11 @@ interface EstimateStore {
   setCurrentEstimate: (estimate: Estimate | null) => void;
   duplicateEstimate: (id: string) => void;
   updateRateLibrary: (key: string, rate: number) => void;
+  
+  // Custom materials
+  addCustomMaterialRate: (material: Omit<CustomMaterial, 'id' | 'key'>, rate: number) => void;
+  deleteCustomMaterialRate: (id: string) => void;
+  clearAllData: () => void;
   
   // Calculation helper
   calculateQuantities: (details: ProjectDetails) => MaterialItem[];
@@ -185,9 +199,10 @@ export const MOCK_ESTIMATES: Estimate[] = [
 export const useEstimateStore = create<EstimateStore>()(
   persist(
     (set, get) => ({
-      estimates: MOCK_ESTIMATES,
+      estimates: [],
       currentEstimate: null,
       rateLibrary: INITIAL_RATES,
+      customMaterials: [],
 
       addEstimate: (estimate) => set((state) => ({ 
         estimates: [estimate, ...state.estimates] 
@@ -229,6 +244,34 @@ export const useEstimateStore = create<EstimateStore>()(
           set((state) => ({ estimates: [newEstimate, ...state.estimates] }));
         }
       },
+
+      addCustomMaterialRate: (material, rate) => set((state) => {
+        const id = crypto.randomUUID();
+        const key = `custom_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const newMaterial = { ...material, id, key };
+        return {
+          customMaterials: [...state.customMaterials, newMaterial],
+          rateLibrary: { ...state.rateLibrary, [key]: rate }
+        };
+      }),
+
+      deleteCustomMaterialRate: (id) => set((state) => {
+        const material = state.customMaterials.find(m => m.id === id);
+        if (!material) return {};
+        const newRateLibrary = { ...state.rateLibrary };
+        delete newRateLibrary[material.key];
+        return {
+          customMaterials: state.customMaterials.filter(m => m.id !== id),
+          rateLibrary: newRateLibrary
+        };
+      }),
+
+      clearAllData: () => set({
+        estimates: [],
+        currentEstimate: null,
+        customMaterials: [],
+        rateLibrary: INITIAL_RATES
+      }),
 
       calculateQuantities: (details) => {
         const rules = CONSTRUCTION_THUMB_RULES[details.projectType] || CONSTRUCTION_THUMB_RULES.residential;

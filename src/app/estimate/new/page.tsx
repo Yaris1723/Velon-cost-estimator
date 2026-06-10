@@ -1,6 +1,8 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
   ArrowLeft, 
@@ -12,13 +14,13 @@ import {
   Download,
   Share2,
   Printer,
-  ChevronRight,
   HardHat,
   MapPin,
   Calendar as CalendarIcon,
   Plus
 } from "lucide-react";
 import { useEstimateStore, ProjectDetails, MaterialItem } from "@/store/useEstimateStore";
+import { INITIAL_RATES, MATERIAL_CATEGORIES, MATERIAL_UNITS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,18 +47,86 @@ import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import * as XLSX from "xlsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+
+const MATERIAL_KEY_TO_CATEGORY: Record<string, string> = {
+  cement: MATERIAL_CATEGORIES.CEMENT,
+  steel: MATERIAL_CATEGORIES.STEEL,
+  sand: MATERIAL_CATEGORIES.SAND,
+  mSand: MATERIAL_CATEGORIES.MSAND,
+  jalli40: MATERIAL_CATEGORIES.JALLI_40,
+  jalli20: MATERIAL_CATEGORIES.JALLI_20,
+  jalli12: MATERIAL_CATEGORIES.JALLI_12,
+  bricks: MATERIAL_CATEGORIES.MASONRY,
+  tiles: MATERIAL_CATEGORIES.FINISHING,
+  paint: MATERIAL_CATEGORIES.FINISHING,
+  putty: MATERIAL_CATEGORIES.FINISHING,
+  electrical: MATERIAL_CATEGORIES.ELECTRICAL,
+  plumbing: MATERIAL_CATEGORIES.PLUMBING,
+  doors: "Woodwork",
+  windows: "Fabrication",
+};
 
 function NewEstimateForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("id");
   const tabParam = searchParams.get("tab");
-  const { estimates, addEstimate, updateEstimate, calculateQuantities } = useEstimateStore();
+  const { estimates, addEstimate, updateEstimate, calculateQuantities, rateLibrary, customMaterials } = useEstimateStore();
   const [activeTab, setActiveTab] = useState("details");
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   
-  // Progress state
-  const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+  // Custom material dialog states
+  const [isAddMaterialOpen, setIsAddMaterialOpen] = useState(false);
+  const [selectedLibraryKey, setSelectedLibraryKey] = useState("custom_new");
+  const [newMaterialName, setNewMaterialName] = useState("");
+  const [newMaterialCategory, setNewMaterialCategory] = useState("Custom");
+  const [newMaterialUnit, setNewMaterialUnit] = useState("Nos");
+  const [newMaterialQuantity, setNewMaterialQuantity] = useState(1);
+  const [newMaterialRate, setNewMaterialRate] = useState(0);
+
+  // Combine standard and custom library materials
+  const libraryOptions = useMemo(() => [
+    ...Object.keys(INITIAL_RATES).map(key => ({
+      key,
+      name: key.replace(/([A-Z0-9])/g, ' $1'),
+      category: MATERIAL_KEY_TO_CATEGORY[key] || 'General',
+      unit: MATERIAL_UNITS[key] || 'Unit',
+      rate: rateLibrary[key] ?? INITIAL_RATES[key]
+    })),
+    ...customMaterials.map(m => ({
+      key: m.key,
+      name: m.name,
+      category: m.category,
+      unit: m.unit,
+      rate: rateLibrary[m.key] ?? 0
+    }))
+  ], [rateLibrary, customMaterials]);
+
+  useEffect(() => {
+    if (selectedLibraryKey === "custom_new") {
+      setNewMaterialName("");
+      setNewMaterialCategory("Custom");
+      setNewMaterialUnit("Nos");
+      setNewMaterialRate(0);
+    } else {
+      const selected = libraryOptions.find(o => o.key === selectedLibraryKey);
+      if (selected) {
+        setNewMaterialName(selected.name);
+        setNewMaterialCategory(selected.category);
+        setNewMaterialUnit(selected.unit);
+        setNewMaterialRate(selected.rate);
+      }
+    }
+  }, [selectedLibraryKey, libraryOptions]);
 
   // Step 1: Project Details
   const [details, setDetails] = useState<ProjectDetails>({
@@ -119,6 +189,7 @@ function NewEstimateForm() {
       const initialMaterials = calculateQuantities(details);
       setMaterials(initialMaterials);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [details.builtUpArea, details.projectType, editId, isDataLoaded]);
 
   // Calculate totals whenever materials or summary factors change
@@ -135,20 +206,24 @@ function NewEstimateForm() {
     }));
   }, [materials, summary.labourCost, summary.contractorMargin, summary.wastage, summary.transportation, summary.miscellaneous]);
 
-  const handleDetailChange = (field: keyof ProjectDetails, value: any) => {
+  const handleDetailChange = (field: keyof ProjectDetails, value: string | number | boolean) => {
     let sanitizedValue = value;
     if (field === 'builtUpArea') {
-      sanitizedValue = Math.max(0, Number(value));
+      sanitizedValue = value === "" ? 0 : Math.max(0, Number(value));
     } else if (field === 'floors') {
-      sanitizedValue = Math.max(1, Number(value));
+      sanitizedValue = value === "" ? 1 : Math.max(1, Number(value));
     }
     setDetails(prev => ({ ...prev, [field]: sanitizedValue }));
   };
 
-  const handleMaterialChange = (id: string, field: 'quantity' | 'rate' | 'category' | 'name', value: any) => {
+  const handleMaterialChange = (id: string, field: 'quantity' | 'rate' | 'category' | 'name', value: string | number) => {
     let sanitizedValue = value;
     if (field === 'quantity' || field === 'rate') {
-      sanitizedValue = Math.max(0, Number(value));
+      if (value === "") {
+        sanitizedValue = 0;
+      } else {
+        sanitizedValue = Math.max(0, Number(value));
+      }
     }
     setMaterials(prev => prev.map(item => {
       if (item.id === id) {
@@ -162,22 +237,37 @@ function NewEstimateForm() {
     }));
   };
 
-  const handleSummaryChange = (field: keyof typeof summary, value: number) => {
-    setSummary(prev => ({ ...prev, [field]: Math.max(0, value) }));
+  const handleSummaryChange = (field: keyof typeof summary, value: string | number) => {
+    const numValue = value === "" ? 0 : Math.max(0, Number(value));
+    setSummary(prev => ({ ...prev, [field]: numValue }));
   };
 
-  const addCustomMaterial = () => {
+  const handleAddMaterialConfirm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMaterialName.trim()) {
+      toast.error("Please enter a material name");
+      return;
+    }
     const newItem: MaterialItem = {
       id: crypto.randomUUID(),
-      name: "New Material",
-      category: "Custom",
-      unit: "Nos",
-      quantity: 1,
-      rate: 0,
-      total: 0
+      name: newMaterialName,
+      category: newMaterialCategory,
+      unit: newMaterialUnit,
+      quantity: newMaterialQuantity || 1,
+      rate: newMaterialRate || 0,
+      total: (newMaterialQuantity || 1) * (newMaterialRate || 0)
     };
     setMaterials([...materials, newItem]);
-    toast.success("Custom material added");
+    setIsAddMaterialOpen(false);
+    toast.success(`${newMaterialName} added successfully!`);
+    
+    // Reset state
+    setSelectedLibraryKey("custom_new");
+    setNewMaterialName("");
+    setNewMaterialCategory("Custom");
+    setNewMaterialUnit("Nos");
+    setNewMaterialQuantity(1);
+    setNewMaterialRate(0);
   };
 
   const handleSave = () => {
@@ -305,21 +395,21 @@ function NewEstimateForm() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-4 w-full h-16 bg-white p-1 rounded-2xl shadow-sm premium-shadow border border-slate-100">
-          <TabsTrigger value="details" className="rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all gap-2">
-            <div className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-[10px]">1</div>
-            Project Details
+          <TabsTrigger value="details" className="rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all gap-2 text-xs md:text-sm">
+            <div className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-[10px] shrink-0">1</div>
+            <span className="hidden sm:inline">Project Details</span>
           </TabsTrigger>
-          <TabsTrigger value="quantities" className="rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all gap-2">
-             <div className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-[10px]">2</div>
-            Quantities
+          <TabsTrigger value="quantities" className="rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all gap-2 text-xs md:text-sm">
+             <div className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-[10px] shrink-0">2</div>
+            <span className="hidden sm:inline">Quantities</span>
           </TabsTrigger>
-          <TabsTrigger value="pricing" className="rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all gap-2">
-             <div className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-[10px]">3</div>
-            Rates & Pricing
+          <TabsTrigger value="pricing" className="rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all gap-2 text-xs md:text-sm">
+             <div className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-[10px] shrink-0">3</div>
+            <span className="hidden sm:inline">Rates & Pricing</span>
           </TabsTrigger>
-          <TabsTrigger value="boq" className="rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all gap-2">
-             <div className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-[10px]">4</div>
-            BOQ Summary
+          <TabsTrigger value="boq" className="rounded-xl data-[state=active]:bg-navy data-[state=active]:text-white transition-all gap-2 text-xs md:text-sm">
+             <div className="w-6 h-6 rounded-full border border-current flex items-center justify-center text-[10px] shrink-0">4</div>
+            <span className="hidden sm:inline">BOQ Summary</span>
           </TabsTrigger>
         </TabsList>
 
@@ -379,7 +469,7 @@ function NewEstimateForm() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Project Type</Label>
-                    <Select value={details.projectType} onValueChange={(v) => handleDetailChange('projectType', v)}>
+                    <Select value={details.projectType} onValueChange={(v) => handleDetailChange('projectType', v || 'residential')}>
                       <SelectTrigger className="h-12 border-slate-200 rounded-xl">
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
@@ -409,8 +499,8 @@ function NewEstimateForm() {
                         placeholder="0" 
                         min="0"
                         className="h-12 border-slate-200 font-bold text-lg rounded-xl"
-                        value={details.builtUpArea || ""}
-                        onChange={(e) => handleDetailChange('builtUpArea', Number(e.target.value))}
+                        value={details.builtUpArea === 0 ? "" : details.builtUpArea}
+                        onChange={(e) => handleDetailChange('builtUpArea', e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -419,13 +509,13 @@ function NewEstimateForm() {
                         type="number" 
                         min="1"
                         className="h-12 border-slate-200 rounded-xl"
-                        value={details.floors}
-                        onChange={(e) => handleDetailChange('floors', Number(e.target.value))}
+                        value={details.floors === 0 ? "" : details.floors}
+                        onChange={(e) => handleDetailChange('floors', e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Foundation Type</Label>
-                      <Select value={details.foundationType} onValueChange={(v) => handleDetailChange('foundationType', v)}>
+                      <Select value={details.foundationType} onValueChange={(v) => handleDetailChange('foundationType', v || 'Isolated Footing')}>
                         <SelectTrigger className="h-12 border-slate-200 rounded-xl">
                           <SelectValue />
                         </SelectTrigger>
@@ -478,53 +568,159 @@ function NewEstimateForm() {
                 </Badge>
               </CardHeader>
               <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-                      <TableHead className="pl-8 font-bold text-navy h-14">Material Name</TableHead>
-                      <TableHead className="font-bold text-navy">Category</TableHead>
-                      <TableHead className="font-bold text-navy">Unit</TableHead>
-                      <TableHead className="font-bold text-navy w-40">Estimated Quantity</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {materials.map((item) => (
-                      <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                        <TableCell className="pl-8 py-4">
-                           <Input 
-                            value={item.name}
-                            onChange={(e) => handleMaterialChange(item.id, 'name', e.target.value)}
-                            className="bg-transparent border-none p-0 font-medium text-navy focus-visible:ring-0 focus-visible:underline"
-                           />
-                        </TableCell>
-                        <TableCell>
-                           <Input 
-                            value={item.category}
-                            onChange={(e) => handleMaterialChange(item.id, 'category', e.target.value)}
-                            className="bg-transparent border-none p-0 text-slate-500 text-sm focus-visible:ring-0 focus-visible:underline"
-                           />
-                        </TableCell>
-                        <TableCell><Badge variant="secondary" className="bg-slate-100 text-slate-600 rounded-md font-medium">{item.unit}</Badge></TableCell>
-                        <TableCell>
-                          <Input 
-                            type="number" 
-                            min="0"
-                            className="w-28 h-10 border-slate-200 focus:bg-white rounded-lg font-semibold"
-                            value={item.quantity}
-                            onChange={(e) => handleMaterialChange(item.id, 'quantity', Number(e.target.value))}
-                          />
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
+                        <TableHead className="pl-8 font-bold text-navy h-14">Material Name</TableHead>
+                        <TableHead className="font-bold text-navy">Category</TableHead>
+                        <TableHead className="font-bold text-navy">Unit</TableHead>
+                        <TableHead className="font-bold text-navy w-40">Estimated Quantity</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {materials.map((item) => (
+                        <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                          <TableCell className="pl-8 py-4">
+                             <Input 
+                              value={item.name}
+                              onChange={(e) => handleMaterialChange(item.id, 'name', e.target.value)}
+                              className="bg-transparent border-none p-0 font-medium text-navy focus-visible:ring-0 focus-visible:underline"
+                             />
+                          </TableCell>
+                          <TableCell>
+                             <Input 
+                              value={item.category}
+                              onChange={(e) => handleMaterialChange(item.id, 'category', e.target.value)}
+                              className="bg-transparent border-none p-0 text-slate-500 text-sm focus-visible:ring-0 focus-visible:underline"
+                             />
+                          </TableCell>
+                          <TableCell><Badge variant="secondary" className="bg-slate-100 text-slate-600 rounded-md font-medium">{item.unit}</Badge></TableCell>
+                          <TableCell>
+                            <Input 
+                              type="number" 
+                              min="0"
+                              className="w-28 h-10 border-slate-200 focus:bg-white rounded-lg font-semibold"
+                              value={item.quantity === 0 ? "" : item.quantity}
+                              onChange={(e) => handleMaterialChange(item.id, 'quantity', e.target.value)}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="bg-emerald-50/30 hover:bg-emerald-50/30">
+                        <TableCell colSpan={4} className="py-4 pl-8">
+                          <Dialog open={isAddMaterialOpen} onOpenChange={setIsAddMaterialOpen}>
+                            <DialogTrigger render={
+                              <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50">
+                                <Plus className="w-4 h-4 mr-2" /> Add Custom Material
+                              </Button>
+                            } />
+                            <DialogContent className="sm:max-w-md bg-slate-900 text-white border border-white/10 p-6 rounded-2xl">
+                              <DialogHeader>
+                                <DialogTitle className="text-xl font-bold text-white flex items-center gap-2">
+                                  <Plus className="w-5 h-5 text-gold" />
+                                  Add Custom Material
+                                </DialogTitle>
+                              </DialogHeader>
+                              <form onSubmit={handleAddMaterialConfirm} className="space-y-4 py-4 text-left">
+                                <div className="space-y-2">
+                                  <Label className="text-xs font-bold uppercase tracking-wider text-white/50">Select from library</Label>
+                                  <Select value={selectedLibraryKey} onValueChange={(v) => setSelectedLibraryKey(v || "custom_new")}>
+                                    <SelectTrigger className="h-11 bg-white/5 border-white/10 rounded-xl text-white">
+                                      <SelectValue placeholder="Custom (not in list)" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-slate-800 text-white border-white/10">
+                                      <SelectItem value="custom_new">Custom (not in list)</SelectItem>
+                                      {libraryOptions.map(option => (
+                                        <SelectItem key={option.key} value={option.key} className="capitalize">
+                                          {option.name} (₹{option.rate}/{option.unit})
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="mat-name" className="text-xs font-bold uppercase tracking-wider text-white/50">Material Name</Label>
+                                  <Input
+                                    id="mat-name"
+                                    className="h-11 bg-white/5 border-white/10 rounded-xl text-white px-3"
+                                    value={newMaterialName}
+                                    onChange={(e) => setNewMaterialName(e.target.value)}
+                                    disabled={selectedLibraryKey !== "custom_new"}
+                                    required
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="mat-cat" className="text-xs font-bold uppercase tracking-wider text-white/50">Category</Label>
+                                    <Input
+                                      id="mat-cat"
+                                      className="h-11 bg-white/5 border-white/10 rounded-xl text-white px-3"
+                                      value={newMaterialCategory}
+                                      onChange={(e) => setNewMaterialCategory(e.target.value)}
+                                      disabled={selectedLibraryKey !== "custom_new"}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="mat-unit" className="text-xs font-bold uppercase tracking-wider text-white/50">Unit</Label>
+                                    <Input
+                                      id="mat-unit"
+                                      className="h-11 bg-white/5 border-white/10 rounded-xl text-white px-3"
+                                      value={newMaterialUnit}
+                                      onChange={(e) => setNewMaterialUnit(e.target.value)}
+                                      disabled={selectedLibraryKey !== "custom_new"}
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="mat-qty" className="text-xs font-bold uppercase tracking-wider text-white/50">Quantity</Label>
+                                    <Input
+                                      id="mat-qty"
+                                      type="number"
+                                      min="0.01"
+                                      step="any"
+                                      className="h-11 bg-white/5 border-white/10 rounded-xl text-white px-3"
+                                      value={newMaterialQuantity === 0 ? "" : newMaterialQuantity}
+                                      onChange={(e) => setNewMaterialQuantity(e.target.value === "" ? 0 : Number(e.target.value))}
+                                      required
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="mat-rate" className="text-xs font-bold uppercase tracking-wider text-white/50">Rate (₹)</Label>
+                                    <Input
+                                      id="mat-rate"
+                                      type="number"
+                                      min="0"
+                                      step="any"
+                                      className="h-11 bg-white/5 border-white/10 rounded-xl text-white px-3"
+                                      value={newMaterialRate === 0 ? "" : newMaterialRate}
+                                      onChange={(e) => setNewMaterialRate(e.target.value === "" ? 0 : Number(e.target.value))}
+                                      disabled={selectedLibraryKey !== "custom_new"}
+                                      required
+                                    />
+                                  </div>
+                                </div>
+
+                                <DialogFooter className="pt-4 gap-2 flex justify-end">
+                                  <DialogClose render={<Button type="button" variant="outline" className="border-white/10 text-white hover:bg-white/5 rounded-xl h-11 px-4" />}>
+                                    Cancel
+                                  </DialogClose>
+                                  <Button type="submit" className="bg-gold hover:bg-gold/90 text-navy font-bold rounded-xl h-11 px-6">
+                                    Add Material
+                                  </Button>
+                                </DialogFooter>
+                              </form>
+                            </DialogContent>
+                          </Dialog>
                         </TableCell>
                       </TableRow>
-                    ))}
-                    <TableRow className="bg-emerald-50/30 hover:bg-emerald-50/30">
-                      <TableCell colSpan={4} className="py-4 pl-8">
-                         <Button variant="ghost" size="sm" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={addCustomMaterial}>
-                           <Plus className="w-4 h-4 mr-2" /> Add Custom Material
-                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
               <CardFooter className="bg-slate-50/50 p-8 flex justify-between rounded-b-2xl">
                 <Button variant="outline" size="lg" className="rounded-xl" onClick={() => setActiveTab("details")}>
@@ -553,39 +749,41 @@ function NewEstimateForm() {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
-                 <Table>
-                  <TableHeader>
-                    <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-                      <TableHead className="pl-8 font-bold text-navy h-14">Material</TableHead>
-                      <TableHead className="font-bold text-navy">Category</TableHead>
-                      <TableHead className="font-bold text-navy text-right">Qty / Unit</TableHead>
-                      <TableHead className="font-bold text-navy">Rate (₹)</TableHead>
-                      <TableHead className="text-right pr-8 font-bold text-navy">Amount (₹)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {materials.map((item) => (
-                      <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                        <TableCell className="pl-8 font-medium text-navy">{item.name}</TableCell>
-                        <TableCell className="text-slate-500 text-sm italic">{item.category}</TableCell>
-                        <TableCell className="text-right text-navy font-medium">{item.quantity} <span className="text-[10px] text-slate-400 font-normal">{item.unit}</span></TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="text-slate-400 font-medium">₹</span>
-                            <Input 
-                              type="number" 
-                              min="0"
-                              className="w-28 h-10 border-slate-200 rounded-lg font-bold text-navy"
-                              value={item.rate}
-                              onChange={(e) => handleMaterialChange(item.id, 'rate', Number(e.target.value))}
-                            />
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right pr-8 font-bold text-navy">₹{(item.quantity * item.rate).toLocaleString()}</TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
+                        <TableHead className="pl-8 font-bold text-navy h-14">Material</TableHead>
+                        <TableHead className="font-bold text-navy">Category</TableHead>
+                        <TableHead className="font-bold text-navy text-right">Qty / Unit</TableHead>
+                        <TableHead className="font-bold text-navy">Rate (₹)</TableHead>
+                        <TableHead className="text-right pr-8 font-bold text-navy">Amount (₹)</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {materials.map((item) => (
+                        <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                          <TableCell className="pl-8 font-medium text-navy">{item.name}</TableCell>
+                          <TableCell className="text-slate-500 text-sm italic">{item.category}</TableCell>
+                          <TableCell className="text-right text-navy font-medium">{item.quantity} <span className="text-[10px] text-slate-400 font-normal">{item.unit}</span></TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <span className="text-slate-400 font-medium">₹</span>
+                              <Input 
+                                type="number" 
+                                min="0"
+                                className="w-28 h-10 border-slate-200 rounded-lg font-bold text-navy"
+                                value={item.rate === 0 ? "" : item.rate}
+                                onChange={(e) => handleMaterialChange(item.id, 'rate', e.target.value)}
+                              />
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right pr-8 font-bold text-navy">₹{(item.quantity * item.rate).toLocaleString()}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
               <CardFooter className="bg-slate-50/50 p-8 flex justify-between rounded-b-2xl">
                 <Button variant="outline" size="lg" className="rounded-xl" onClick={() => setActiveTab("quantities")}>
@@ -632,36 +830,38 @@ function NewEstimateForm() {
                     </div>
                   </CardHeader>
                   <CardContent className="p-0 border-x border-slate-50">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-                          <TableHead className="pl-8 h-12 text-xs font-bold uppercase tracking-wider text-slate-500">Material / Category</TableHead>
-                          <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Unit</TableHead>
-                          <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Qty</TableHead>
-                          <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Rate</TableHead>
-                          <TableHead className="text-right pr-8 text-xs font-bold uppercase tracking-wider text-slate-500">Amount</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {materials.map((m, idx) => (
-                           <TableRow key={m.id} className="border-slate-50 hover:bg-slate-50/20 transition-colors">
-                            <TableCell className="pl-8 py-3.5">
-                              <div className="flex items-center gap-3">
-                                <span className="text-[10px] text-slate-300 font-mono">{String(idx+1).padStart(2, '0')}</span>
-                                <div>
-                                  <p className="font-bold text-navy text-sm">{m.name}</p>
-                                  <p className="text-[10px] text-slate-400 italic">{m.category}</p>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-slate-500 text-xs">{m.unit}</TableCell>
-                            <TableCell className="text-navy font-semibold text-xs">{m.quantity}</TableCell>
-                            <TableCell className="text-navy text-xs italic">₹{m.rate}</TableCell>
-                            <TableCell className="text-right pr-8 font-bold text-navy">₹{m.total.toLocaleString()}</TableCell>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
+                            <TableHead className="pl-8 h-12 text-xs font-bold uppercase tracking-wider text-slate-500">Material / Category</TableHead>
+                            <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Unit</TableHead>
+                            <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Qty</TableHead>
+                            <TableHead className="text-xs font-bold uppercase tracking-wider text-slate-500">Rate</TableHead>
+                            <TableHead className="text-right pr-8 text-xs font-bold uppercase tracking-wider text-slate-500">Amount</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {materials.map((m, idx) => (
+                             <TableRow key={m.id} className="border-slate-50 hover:bg-slate-50/20 transition-colors">
+                              <TableCell className="pl-8 py-3.5">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-[10px] text-slate-300 font-mono">{String(idx+1).padStart(2, '0')}</span>
+                                  <div>
+                                    <p className="font-bold text-navy text-sm">{m.name}</p>
+                                    <p className="text-[10px] text-slate-400 italic">{m.category}</p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-slate-500 text-xs">{m.unit}</TableCell>
+                              <TableCell className="text-navy font-semibold text-xs">{m.quantity}</TableCell>
+                              <TableCell className="text-navy text-xs italic">₹{m.rate}</TableCell>
+                              <TableCell className="text-right pr-8 font-bold text-navy">₹{m.total.toLocaleString()}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </CardContent>
                   <div className="p-8 border-t border-slate-50 bg-slate-50/20 flex flex-col gap-3 rounded-b-2xl">
                     <div className="flex justify-between items-center text-sm">
@@ -692,8 +892,8 @@ function NewEstimateForm() {
                       <Input 
                         type="number" 
                         min="0"
-                        value={summary.labourCost} 
-                        onChange={(e) => handleSummaryChange('labourCost', Number(e.target.value))}
+                        value={summary.labourCost === 0 ? "" : summary.labourCost} 
+                        onChange={(e) => handleSummaryChange('labourCost', e.target.value)}
                         className="h-11 rounded-lg font-bold text-navy"
                       />
                     </div>
@@ -702,8 +902,8 @@ function NewEstimateForm() {
                       <Input 
                         type="number" 
                         min="0"
-                        value={summary.contractorMargin} 
-                        onChange={(e) => handleSummaryChange('contractorMargin', Number(e.target.value))}
+                        value={summary.contractorMargin === 0 ? "" : summary.contractorMargin} 
+                        onChange={(e) => handleSummaryChange('contractorMargin', e.target.value)}
                         className="h-11 rounded-lg"
                       />
                     </div>
@@ -712,8 +912,8 @@ function NewEstimateForm() {
                       <Input 
                         type="number" 
                         min="0"
-                        value={summary.wastage} 
-                        onChange={(e) => handleSummaryChange('wastage', Number(e.target.value))}
+                        value={summary.wastage === 0 ? "" : summary.wastage} 
+                        onChange={(e) => handleSummaryChange('wastage', e.target.value)}
                         className="h-11 rounded-lg"
                       />
                     </div>
@@ -722,8 +922,8 @@ function NewEstimateForm() {
                       <Input 
                         type="number" 
                         min="0"
-                        value={summary.transportation} 
-                        onChange={(e) => handleSummaryChange('transportation', Number(e.target.value))}
+                        value={summary.transportation === 0 ? "" : summary.transportation} 
+                        onChange={(e) => handleSummaryChange('transportation', e.target.value)}
                         className="h-11 rounded-lg"
                       />
                     </div>
