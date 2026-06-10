@@ -23,9 +23,10 @@ export default function LoginPage() {
 
     // Simulate network delay
     setTimeout(() => {
-      if (email === "admin@velon.com" && password === "admin123") {
-        login(email, "Admin Velon");
-        toast.success("Welcome back, Admin Velon!");
+      const success = login(email, password);
+      if (success) {
+        const currentUser = useAuthStore.getState().user;
+        toast.success(`Welcome back, ${currentUser?.name || "User"}!`);
         router.push("/");
       } else {
         toast.error("Invalid email or password");

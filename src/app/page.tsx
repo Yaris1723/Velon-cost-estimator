@@ -17,6 +17,7 @@ import {
   Calendar
 } from "lucide-react";
 import { useEstimateStore } from "@/store/useEstimateStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -46,7 +47,13 @@ export default function Dashboard() {
   const handleResetData = () => {
     const password = prompt("Warning: This will permanently delete all estimates and custom rates. Enter admin password to confirm:");
     if (password === null) return; // Cancelled
-    if (password === "admin123") {
+
+    // Find the admin user password dynamically
+    const registeredUsers = useAuthStore.getState().registeredUsers;
+    const adminUser = registeredUsers.find(u => u.role === "admin");
+    const adminPassword = adminUser ? adminUser.password : "admin123";
+
+    if (password === adminPassword) {
       clearAllData();
       toast.success("All dashboard data has been reset successfully.");
     } else {
