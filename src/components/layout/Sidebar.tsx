@@ -72,9 +72,13 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
   };
 
   const handleResetData = () => {
-    if (confirm("Are you sure you want to reset all data? This will delete all estimates and custom rates!")) {
+    const password = prompt("Warning: This will permanently delete all estimates and custom rates. Enter admin password to confirm:");
+    if (password === null) return; // Cancelled
+    if (password === "admin123") {
       clearAllData();
       toast.success("Application data reset successfully!");
+    } else {
+      toast.error("Invalid password. Reset cancelled.");
     }
   };
 

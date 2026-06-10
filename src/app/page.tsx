@@ -44,9 +44,13 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
 
   const handleResetData = () => {
-    if (confirm("Are you sure you want to reset all dashboard data? This will permanently delete all estimates and custom rates.")) {
+    const password = prompt("Warning: This will permanently delete all estimates and custom rates. Enter admin password to confirm:");
+    if (password === null) return; // Cancelled
+    if (password === "admin123") {
       clearAllData();
-      toast.success("All dashboard data has been reset.");
+      toast.success("All dashboard data has been reset successfully.");
+    } else {
+      toast.error("Invalid password. Reset cancelled.");
     }
   };
 
