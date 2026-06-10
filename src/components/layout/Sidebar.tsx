@@ -214,10 +214,10 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
               {user?.role === "admin" ? (
                 <Tabs defaultValue="profile" className="w-full mt-4">
                   <TabsList variant="custom" className="grid grid-cols-2 bg-white/5 p-1 rounded-xl mb-4 border border-white/5 h-11">
-                    <TabsTrigger value="profile" className="rounded-lg text-xs font-bold data-[state=active]:bg-gold data-[state=active]:text-navy py-2 h-full flex items-center justify-center">
+                    <TabsTrigger value="profile" className="rounded-lg text-xs font-bold text-white/60 hover:text-white data-active:bg-gold data-active:text-navy py-2 h-full flex items-center justify-center transition-colors">
                       Profile & System
                     </TabsTrigger>
-                    <TabsTrigger value="users" className="rounded-lg text-xs font-bold data-[state=active]:bg-gold data-[state=active]:text-navy py-2 h-full flex items-center justify-center">
+                    <TabsTrigger value="users" className="rounded-lg text-xs font-bold text-white/60 hover:text-white data-active:bg-gold data-active:text-navy py-2 h-full flex items-center justify-center transition-colors">
                       User Accounts ({registeredUsers.length})
                     </TabsTrigger>
                   </TabsList>
@@ -251,7 +251,7 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
                       </div>
 
                       <DialogFooter className="pt-2 gap-2 flex justify-end">
-                        <DialogClose render={<Button variant="outline" className="border-white/10 text-white hover:bg-white/5 rounded-xl h-11 px-4" />}>
+                        <DialogClose render={<Button variant="outline" className="bg-transparent border-white/10 text-white hover:bg-white/5 rounded-xl h-11 px-4" />}>
                           Cancel
                         </DialogClose>
                         <DialogClose render={
@@ -407,7 +407,7 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
                     </div>
 
                     <DialogFooter className="pt-4 gap-2 flex justify-end">
-                      <DialogClose render={<Button variant="outline" className="border-white/10 text-white hover:bg-white/5 rounded-xl h-11 px-4" />}>
+                      <DialogClose render={<Button variant="outline" className="bg-transparent border-white/10 text-white hover:bg-white/5 rounded-xl h-11 px-4" />}>
                         Cancel
                       </DialogClose>
                       <DialogClose render={
