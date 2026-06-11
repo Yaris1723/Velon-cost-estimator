@@ -317,7 +317,7 @@ function NewEstimateForm() {
     doc.text(`Project: ${details.projectName || "N/A"}`, 20, 42);
     doc.text(`Client: ${details.clientName || "N/A"}`, 20, 48);
     doc.text(`Location: ${details.location || "N/A"}`, 20, 54);
-    doc.text(`Floors: ${details.floors <= 1 ? "Ground Floor Only" : `Ground + ${details.floors - 1}`}`, 20, 60);
+    doc.text(`Floors: ${details.floors <= 1 ? "G" : `G+${details.floors - 1}`}`, 20, 60);
 
     doc.text(`Date: ${details.date}`, 130, 42);
     doc.text(`Type: ${details.projectType}`, 130, 48);
@@ -564,12 +564,12 @@ function NewEstimateForm() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="1">Ground Floor Only</SelectItem>
-                          <SelectItem value="2">Ground + 1 Floor</SelectItem>
-                          <SelectItem value="3">Ground + 2 Floors</SelectItem>
-                          <SelectItem value="4">Ground + 3 Floors</SelectItem>
-                          <SelectItem value="5">Ground + 4 Floors</SelectItem>
-                          <SelectItem value="6">Ground + 5 Floors</SelectItem>
+                          <SelectItem value="1">G (Ground Floor Only)</SelectItem>
+                          <SelectItem value="2">G+1 (Ground + 1 Floor)</SelectItem>
+                          <SelectItem value="3">G+2 (Ground + 2 Floors)</SelectItem>
+                          <SelectItem value="4">G+3 (Ground + 3 Floors)</SelectItem>
+                          <SelectItem value="5">G+4 (Ground + 4 Floors)</SelectItem>
+                          <SelectItem value="6">G+5 (Ground + 5 Floors)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -859,7 +859,7 @@ function NewEstimateForm() {
           <TabsContent value="boq" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
-                <Card className="border-none shadow-sm premium-shadow">
+                <Card className="border-none shadow-sm premium-shadow p-0 py-0 gap-0">
                   <CardHeader className="bg-navy rounded-t-2xl text-white px-8 py-10 relative overflow-hidden">
                     <div className="absolute right-0 top-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32" />
                     <div className="relative z-10">
@@ -897,7 +897,7 @@ function NewEstimateForm() {
                         <div>
                           <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest mb-1">Floors</p>
                           <p className="text-base font-semibold">
-                            {details.floors <= 1 ? "Ground Only" : `Ground + ${details.floors - 1}`}
+                            {details.floors <= 1 ? "G" : `G+${details.floors - 1}`}
                           </p>
                         </div>
                         <div>

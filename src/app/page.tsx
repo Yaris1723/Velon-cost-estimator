@@ -71,59 +71,72 @@ export default function Dashboard() {
   );
 
   const getProposalValue = (e: any) => {
-    return e.details.sqFtRate ? (e.details.builtUpArea * e.details.sqFtRate) : e.summary.grandTotal;
+    return Math.round(e.details.sqFtRate ? (e.details.builtUpArea * e.details.sqFtRate) : e.summary.grandTotal);
   };
 
   const getProjectProfit = (e: any) => {
-    return getProposalValue(e) - e.summary.grandTotal;
+    return Math.round(getProposalValue(e) - e.summary.grandTotal);
   };
 
-  const totalProposalValue = estimates.reduce((sum, e) => sum + getProposalValue(e), 0);
-  const generatedRevenue = estimates
+  const totalProposalValue = Math.round(estimates.reduce((sum, e) => sum + getProposalValue(e), 0));
+  const generatedRevenue = Math.round(estimates
     .filter(e => e.status === "approved")
-    .reduce((sum, e) => sum + getProposalValue(e), 0);
-  const totalProfitEarned = estimates
+    .reduce((sum, e) => sum + getProposalValue(e), 0));
+  const totalProfitEarned = Math.round(estimates
     .filter(e => e.status === "approved")
-    .reduce((sum, e) => sum + getProjectProfit(e), 0);
+    .reduce((sum, e) => sum + getProjectProfit(e), 0));
   const activeProjectsCount = estimates.filter(e => e.status === "approved" || e.status === "on_hold").length;
 
   const stats = [
-    { name: "Total Estimates", value: String(estimates.length).padStart(2, '0'), icon: FileText, color: "text-blue-600" },
-    { name: "Proposal Value (INR)", value: `₹${totalProposalValue.toLocaleString()}`, icon: TrendingUp, color: "text-orange-500" },
-    { name: "Revenue Earned (INR)", value: `₹${generatedRevenue.toLocaleString()}`, icon: TrendingUp, color: "text-green-600" },
-    { name: "Profit Earned (INR)", value: `₹${totalProfitEarned.toLocaleString()}`, icon: TrendingUp, color: "text-emerald-600" },
-    { name: "Active Projects", value: String(activeProjectsCount).padStart(2, '0'), icon: CheckCircle2, color: "text-gold" },
+    { name: "Total Estimates", value: String(estimates.length).padStart(2, '0'), icon: FileText, color: "text-blue-600", borderColor: "border-t-blue-500/80" },
+    { name: "Proposal Value (INR)", value: `₹${totalProposalValue.toLocaleString()}`, icon: TrendingUp, color: "text-orange-500", borderColor: "border-t-amber-500/80" },
+    { name: "Revenue Earned (INR)", value: `₹${generatedRevenue.toLocaleString()}`, icon: TrendingUp, color: "text-green-600", borderColor: "border-t-emerald-500/80" },
+    { name: "Profit Earned (INR)", value: `₹${totalProfitEarned.toLocaleString()}`, icon: TrendingUp, color: "text-emerald-600", borderColor: "border-t-gold" },
+    { name: "Active Projects", value: String(activeProjectsCount).padStart(2, '0'), icon: CheckCircle2, color: "text-gold", borderColor: "border-t-teal-500/80" },
   ];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-navy">Welcome back, Admin</h1>
-          <p className="text-muted-foreground mt-1">Manage your construction estimates and BOQs.</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {estimates.length > 0 && (
-            <Button 
-              variant="outline" 
-              onClick={handleResetData}
-              className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 h-12 px-5 rounded-xl transition-all"
-            >
-              Reset All Data
-            </Button>
-          )}
-          <Link href="/estimate/new">
-            <Button className="bg-navy hover:bg-navy/90 text-white gap-2 h-12 px-6 rounded-xl shadow-lg shadow-navy/10 transition-all hover:scale-[1.02]">
-              <Plus className="w-5 h-5" />
-              Create New Estimate
-            </Button>
-          </Link>
+      {/* Premium Welcome Banner */}
+      <div className="bg-gradient-to-r from-navy via-navy/95 to-slate-900 text-white rounded-3xl p-8 relative overflow-hidden shadow-lg border border-white/5">
+        <div className="absolute right-0 top-0 w-80 h-80 bg-gold/5 rounded-full -mr-20 -mt-20 blur-2xl" />
+        <div className="absolute left-1/3 bottom-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <span className="text-[10px] bg-gold/20 text-gold uppercase tracking-widest font-black px-3 py-1 rounded-full border border-gold/20">
+              Administrator Portal
+            </span>
+            <h1 className="text-3xl font-black mt-3 text-white tracking-tight">
+              Welcome back, Admin
+            </h1>
+            <p className="text-white/60 mt-1.5 max-w-xl text-sm leading-relaxed">
+              Manage construction estimates, track project metrics, verify material BOQs, and analyze profit margins in real-time.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            {estimates.length > 0 && (
+              <Button 
+                variant="outline" 
+                onClick={handleResetData}
+                className="bg-white/5 border-rose-500/30 text-rose-300 hover:bg-rose-500/10 hover:text-rose-200 h-12 px-5 rounded-xl transition-all font-semibold"
+              >
+                Reset Dashboard
+              </Button>
+            )}
+            <Link href="/estimate/new">
+              <Button className="bg-gold hover:bg-gold/90 text-navy font-bold gap-2 h-12 px-6 rounded-xl shadow-lg shadow-gold/20 transition-all hover:scale-[1.02]">
+                <Plus className="w-5 h-5" />
+                Create New Estimate
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         {stats.map((stat) => (
-          <Card key={stat.name} className="border-none shadow-sm premium-shadow overflow-hidden group hover:scale-[1.02] transition-transform">
+          <Card key={stat.name} className={cn("border-none border-t-4 shadow-sm premium-shadow overflow-hidden group hover:scale-[1.02] transition-transform bg-white", stat.borderColor)}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-2xl bg-slate-50 group-hover:bg-gold/10 transition-colors`}>
@@ -131,8 +144,8 @@ export default function Dashboard() {
                 </div>
                 <Badge variant="secondary" className="bg-slate-100 text-slate-500 text-[10px] font-bold">+12%</Badge>
               </div>
-              <p className="text-sm font-medium text-muted-foreground">{stat.name}</p>
-              <h3 className="text-3xl font-bold text-navy mt-1">{stat.value}</h3>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{stat.name}</p>
+              <h3 className="text-2xl font-black text-navy mt-1 tracking-tight truncate" title={stat.value}>{stat.value}</h3>
             </CardContent>
           </Card>
         ))}
