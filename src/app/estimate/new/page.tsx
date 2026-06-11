@@ -154,8 +154,8 @@ function NewEstimateForm() {
   const [summary, setSummary] = useState({
     materialTotal: 0,
     labourCost: 0,
-    contractorMargin: 10,
-    wastage: 5,
+    contractorMargin: 0,
+    wastage: 0,
     transportation: 0,
     miscellaneous: 0,
     grandTotal: 0,
@@ -340,17 +340,11 @@ function NewEstimateForm() {
     const finalY = (doc as any).lastAutoTable.finalY + 12;
     doc.setFontSize(9);
     doc.setTextColor(80);
-    doc.text(`Material Subtotal:`, 120, finalY);
-    doc.text(`INR ${summary.materialTotal.toLocaleString()}`, 190, finalY, { align: "right" });
-    
-    doc.text(`Labour Cost:`, 120, finalY + 6);
-    doc.text(`INR ${summary.labourCost.toLocaleString()}`, 190, finalY + 6, { align: "right" });
-    
-    doc.text(`Transportation:`, 120, finalY + 12);
-    doc.text(`INR ${summary.transportation.toLocaleString()}`, 190, finalY + 12, { align: "right" });
+    doc.text(`Total Material Expenses (BOQ):`, 120, finalY);
+    doc.text(`INR ${summary.grandTotal.toLocaleString()}`, 190, finalY, { align: "right" });
 
     doc.setDrawColor(220, 225, 230);
-    doc.line(120, finalY + 16, 190, finalY + 16);
+    doc.line(120, finalY + 4, 190, finalY + 4);
 
     const proposalValue = details.builtUpArea * (details.sqFtRate || 0) || summary.grandTotal;
     const profit = proposalValue - summary.grandTotal;
@@ -358,18 +352,18 @@ function NewEstimateForm() {
     doc.setFontSize(10);
     doc.setFont(undefined, 'bold');
     doc.setTextColor(10, 25, 47);
-    doc.text(`1. Proposal Value (Estimate):`, 120, finalY + 22);
-    doc.text(`INR ${proposalValue.toLocaleString()}`, 190, finalY + 22, { align: "right" });
+    doc.text(`1. Proposal Value (Estimate):`, 120, finalY + 10);
+    doc.text(`INR ${proposalValue.toLocaleString()}`, 190, finalY + 10, { align: "right" });
 
     doc.setFontSize(10);
     doc.setFont(undefined, 'normal');
     doc.setTextColor(80);
-    doc.text(`2. Construction Expenses (BOQ):`, 120, finalY + 28);
-    doc.text(`INR ${summary.grandTotal.toLocaleString()}`, 190, finalY + 28, { align: "right" });
+    doc.text(`2. Construction Expenses (BOQ):`, 120, finalY + 16);
+    doc.text(`INR ${summary.grandTotal.toLocaleString()}`, 190, finalY + 16, { align: "right" });
 
     doc.setDrawColor(10, 25, 47);
     doc.setLineWidth(0.5);
-    doc.line(120, finalY + 32, 190, finalY + 32);
+    doc.line(120, finalY + 20, 190, finalY + 20);
 
     doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
@@ -378,8 +372,8 @@ function NewEstimateForm() {
     } else {
       doc.setTextColor(220, 53, 69); // Red
     }
-    doc.text(`Net Projected Profit (1 - 2):`, 120, finalY + 38);
-    doc.text(`INR ${profit.toLocaleString()}`, 190, finalY + 38, { align: "right" });
+    doc.text(`Net Projected Profit (1 - 2):`, 120, finalY + 26);
+    doc.text(`INR ${profit.toLocaleString()}`, 190, finalY + 26, { align: "right" });
 
     doc.save(`${details.projectName}_BOQ.pdf`);
     toast.success("PDF Exported");
@@ -988,55 +982,6 @@ function NewEstimateForm() {
               </div>
 
               <div className="space-y-6">
-                <Card className="border-none shadow-sm premium-shadow">
-                  <CardHeader className="border-b border-slate-50">
-                    <CardTitle className="text-lg text-navy">Project Parameters</CardTitle>
-                    <CardDescription>Adjust margins and buffer charges.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-5">
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Labour Cost (INR)</Label>
-                      <Input 
-                        type="number" 
-                        min="0"
-                        value={summary.labourCost === 0 ? "" : summary.labourCost} 
-                        onChange={(e) => handleSummaryChange('labourCost', e.target.value)}
-                        className="h-11 rounded-lg font-bold text-navy"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Contractor Margin (%)</Label>
-                      <Input 
-                        type="number" 
-                        min="0"
-                        value={summary.contractorMargin === 0 ? "" : summary.contractorMargin} 
-                        onChange={(e) => handleSummaryChange('contractorMargin', e.target.value)}
-                        className="h-11 rounded-lg"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Wastage Buffer (%)</Label>
-                      <Input 
-                        type="number" 
-                        min="0"
-                        value={summary.wastage === 0 ? "" : summary.wastage} 
-                        onChange={(e) => handleSummaryChange('wastage', e.target.value)}
-                        className="h-11 rounded-lg"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest">Transportation (INR)</Label>
-                      <Input 
-                        type="number" 
-                        min="0"
-                        value={summary.transportation === 0 ? "" : summary.transportation} 
-                        onChange={(e) => handleSummaryChange('transportation', e.target.value)}
-                        className="h-11 rounded-lg"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-
                 <div className="grid grid-cols-1 gap-4">
                    <Button 
                     className="w-full h-14 bg-navy hover:bg-navy/90 text-white rounded-xl shadow-lg border-none"
