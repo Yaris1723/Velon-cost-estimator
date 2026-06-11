@@ -70,16 +70,28 @@ export default function Dashboard() {
     e.details.location.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalProposalValue = estimates.reduce((sum, e) => sum + e.summary.grandTotal, 0);
+  const getProposalValue = (e: any) => {
+    return e.details.sqFtRate ? (e.details.builtUpArea * e.details.sqFtRate) : e.summary.grandTotal;
+  };
+
+  const getProjectProfit = (e: any) => {
+    return getProposalValue(e) - e.summary.grandTotal;
+  };
+
+  const totalProposalValue = estimates.reduce((sum, e) => sum + getProposalValue(e), 0);
   const generatedRevenue = estimates
     .filter(e => e.status === "approved")
-    .reduce((sum, e) => sum + e.summary.grandTotal, 0);
+    .reduce((sum, e) => sum + getProposalValue(e), 0);
+  const totalProfitEarned = estimates
+    .filter(e => e.status === "approved")
+    .reduce((sum, e) => sum + getProjectProfit(e), 0);
   const activeProjectsCount = estimates.filter(e => e.status === "approved" || e.status === "on_hold").length;
 
   const stats = [
     { name: "Total Estimates", value: String(estimates.length).padStart(2, '0'), icon: FileText, color: "text-blue-600" },
     { name: "Proposal Value (INR)", value: `₹${totalProposalValue.toLocaleString()}`, icon: TrendingUp, color: "text-orange-500" },
     { name: "Revenue Earned (INR)", value: `₹${generatedRevenue.toLocaleString()}`, icon: TrendingUp, color: "text-green-600" },
+    { name: "Profit Earned (INR)", value: `₹${totalProfitEarned.toLocaleString()}`, icon: TrendingUp, color: "text-emerald-600" },
     { name: "Active Projects", value: String(activeProjectsCount).padStart(2, '0'), icon: CheckCircle2, color: "text-gold" },
   ];
 
@@ -109,7 +121,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         {stats.map((stat) => (
           <Card key={stat.name} className="border-none shadow-sm premium-shadow overflow-hidden group hover:scale-[1.02] transition-transform">
             <CardContent className="p-6">
@@ -152,7 +164,9 @@ export default function Dashboard() {
                   <TableHead className="font-semibold text-navy">Project Name</TableHead>
                   <TableHead className="font-semibold text-navy">Client</TableHead>
                   <TableHead className="font-semibold text-navy">Date</TableHead>
-                  <TableHead className="font-semibold text-navy">Value (INR)</TableHead>
+                  <TableHead className="font-semibold text-navy">Proposal Value</TableHead>
+                  <TableHead className="font-semibold text-navy">Expenses (BOQ)</TableHead>
+                  <TableHead className="font-semibold text-navy">Est. Profit</TableHead>
                   <TableHead className="font-semibold text-navy">Status</TableHead>
                   <TableHead className="text-right"></TableHead>
                 </TableRow>
@@ -174,7 +188,11 @@ export default function Dashboard() {
                       </TableCell>
                       <TableCell className="font-medium text-slate-700">{estimate.details.clientName}</TableCell>
                       <TableCell className="text-slate-500" suppressHydrationWarning>{format(new Date(estimate.details.date), "MMM d, yyyy")}</TableCell>
-                      <TableCell className="font-bold text-navy">₹{estimate.summary.grandTotal.toLocaleString()}</TableCell>
+                      <TableCell className="font-bold text-navy">₹{getProposalValue(estimate).toLocaleString()}</TableCell>
+                      <TableCell className="font-semibold text-slate-600">₹{estimate.summary.grandTotal.toLocaleString()}</TableCell>
+                      <TableCell className={cn("font-bold", getProjectProfit(estimate) >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                        ₹{getProjectProfit(estimate).toLocaleString()}
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
                           {/* Current Status Badge */}

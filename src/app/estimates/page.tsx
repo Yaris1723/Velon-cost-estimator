@@ -75,13 +75,29 @@ function EstimatesListContent() {
                       {estimate.status === 'declined' && <Badge className="bg-rose-50 text-rose-600 border-rose-100 font-bold px-2 py-0.5 text-[10px]">Declined</Badge>}
                       {(!estimate.status || estimate.status === 'pending') && <Badge className="bg-blue-50 text-blue-600 border-blue-100 font-bold px-2 py-0.5 text-[10px]">Pending</Badge>}
                     </div>
-                    <span className="text-xl font-black text-navy">₹{estimate.summary.grandTotal.toLocaleString()}</span>
                   </div>
                   
                   <Link href={projectLink}>
                     <h3 className="text-lg font-bold text-navy hover:text-gold hover:underline transition-colors cursor-pointer">{estimate.details.projectName}</h3>
                   </Link>
                   <p className="text-sm text-slate-500 mb-4">{estimate.details.clientName}</p>
+
+                  <div className="bg-slate-50 p-3 rounded-xl mb-4 text-xs space-y-1.5 text-slate-700">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Proposal Value:</span>
+                      <span className="font-bold text-navy">₹{(estimate.details.sqFtRate ? estimate.details.builtUpArea * estimate.details.sqFtRate : estimate.summary.grandTotal).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Expenses (BOQ):</span>
+                      <span className="font-semibold text-slate-600">₹{estimate.summary.grandTotal.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-slate-200/60 pt-1">
+                      <span className="text-slate-400">Est. Profit:</span>
+                      <span className={cn("font-bold", (estimate.details.sqFtRate ? (estimate.details.builtUpArea * estimate.details.sqFtRate - estimate.summary.grandTotal) : 0) >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                        ₹{((estimate.details.sqFtRate ? estimate.details.builtUpArea * estimate.details.sqFtRate : estimate.summary.grandTotal) - estimate.summary.grandTotal).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
 
                   <div className="space-y-3 mb-4">
                     <div className="flex items-center gap-2 text-xs text-slate-400">

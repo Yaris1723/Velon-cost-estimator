@@ -17,6 +17,7 @@ export interface ProjectDetails {
   bathrooms: number;
   staircase: boolean;
   parking: boolean;
+  sqFtRate?: number;
 }
 
 export interface MaterialItem {
@@ -98,6 +99,7 @@ export const MOCK_ESTIMATES: Estimate[] = [
       bathrooms: 4,
       staircase: true,
       parking: true,
+      sqFtRate: 2000,
     },
     materials: [
       { id: '1', name: 'Cement', category: MATERIAL_CATEGORIES.CEMENT, unit: MATERIAL_UNITS.cement, quantity: 300, rate: 400, total: 120000 },
@@ -136,6 +138,7 @@ export const MOCK_ESTIMATES: Estimate[] = [
       bathrooms: 2,
       staircase: false,
       parking: true,
+      sqFtRate: 1800,
     },
     materials: [
       { id: '1', name: 'Cement', category: MATERIAL_CATEGORIES.CEMENT, unit: MATERIAL_UNITS.cement, quantity: 250, rate: 400, total: 100000 },
@@ -174,6 +177,7 @@ export const MOCK_ESTIMATES: Estimate[] = [
       bathrooms: 2,
       staircase: false,
       parking: false,
+      sqFtRate: 1500,
     },
     materials: [
       { id: '1', name: 'Cement', category: MATERIAL_CATEGORIES.CEMENT, unit: MATERIAL_UNITS.cement, quantity: 200, rate: 400, total: 80000 },

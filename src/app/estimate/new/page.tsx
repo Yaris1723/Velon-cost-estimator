@@ -23,6 +23,7 @@ import { useEstimateStore, ProjectDetails, MaterialItem } from "@/store/useEstim
 import { INITIAL_RATES, MATERIAL_CATEGORIES, MATERIAL_UNITS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -212,6 +213,8 @@ function NewEstimateForm() {
       sanitizedValue = value === "" ? 0 : Math.max(0, Number(value));
     } else if (field === 'floors') {
       sanitizedValue = value === "" ? 1 : Math.max(1, Number(value));
+    } else if (field === 'sqFtRate') {
+      sanitizedValue = value === "" ? 0 : Math.max(0, Number(value));
     }
     setDetails(prev => ({ ...prev, [field]: sanitizedValue }));
   };
@@ -310,13 +313,16 @@ function NewEstimateForm() {
 
     // Project Details
     doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Project: ${details.projectName}`, 20, 45);
-    doc.text(`Client: ${details.clientName}`, 20, 52);
-    doc.text(`Location: ${details.location}`, 20, 59);
-    doc.text(`Date: ${details.date}`, 140, 45);
-    doc.text(`Type: ${details.projectType}`, 140, 52);
-    doc.text(`Area: ${details.builtUpArea} sq.ft`, 140, 59);
+    doc.setTextColor(80);
+    doc.text(`Project: ${details.projectName || "N/A"}`, 20, 42);
+    doc.text(`Client: ${details.clientName || "N/A"}`, 20, 48);
+    doc.text(`Location: ${details.location || "N/A"}`, 20, 54);
+    doc.text(`Floors: ${details.floors <= 1 ? "Ground Floor Only" : `Ground + ${details.floors - 1}`}`, 20, 60);
+
+    doc.text(`Date: ${details.date}`, 130, 42);
+    doc.text(`Type: ${details.projectType}`, 130, 48);
+    doc.text(`Area: ${details.builtUpArea} sq.ft`, 130, 54);
+    doc.text(`Sq.Ft Rate: INR ${(details.sqFtRate || 0).toLocaleString()}/sq.ft`, 130, 60);
 
     // Items Table
     const tableData = materials.map(m => [m.name, m.category, m.quantity, m.unit, m.rate, m.total.toLocaleString()]);
@@ -331,26 +337,49 @@ function NewEstimateForm() {
     });
 
     // Summary
-    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    const finalY = (doc as any).lastAutoTable.finalY + 12;
+    doc.setFontSize(9);
+    doc.setTextColor(80);
+    doc.text(`Material Subtotal:`, 120, finalY);
+    doc.text(`INR ${summary.materialTotal.toLocaleString()}`, 190, finalY, { align: "right" });
+    
+    doc.text(`Labour Cost:`, 120, finalY + 6);
+    doc.text(`INR ${summary.labourCost.toLocaleString()}`, 190, finalY + 6, { align: "right" });
+    
+    doc.text(`Transportation:`, 120, finalY + 12);
+    doc.text(`INR ${summary.transportation.toLocaleString()}`, 190, finalY + 12, { align: "right" });
+
+    doc.setDrawColor(220, 225, 230);
+    doc.line(120, finalY + 16, 190, finalY + 16);
+
+    const proposalValue = details.builtUpArea * (details.sqFtRate || 0) || summary.grandTotal;
+    const profit = proposalValue - summary.grandTotal;
+    
     doc.setFontSize(10);
-    doc.setTextColor(50);
-    doc.text(`Material Subtotal:`, 130, finalY);
-    doc.text(`INR ${summary.materialTotal.toLocaleString()}`, 170, finalY, { align: "right" });
-    
-    doc.text(`Labour Cost:`, 130, finalY + 7);
-    doc.text(`INR ${summary.labourCost.toLocaleString()}`, 170, finalY + 7, { align: "right" });
-    
-    doc.text(`Transportation:`, 130, finalY + 14);
-    doc.text(`INR ${summary.transportation.toLocaleString()}`, 170, finalY + 14, { align: "right" });
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(10, 25, 47);
+    doc.text(`1. Proposal Value (Estimate):`, 120, finalY + 22);
+    doc.text(`INR ${proposalValue.toLocaleString()}`, 190, finalY + 22, { align: "right" });
+
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.setTextColor(80);
+    doc.text(`2. Construction Expenses (BOQ):`, 120, finalY + 28);
+    doc.text(`INR ${summary.grandTotal.toLocaleString()}`, 190, finalY + 28, { align: "right" });
 
     doc.setDrawColor(10, 25, 47);
-    doc.line(130, finalY + 18, 180, finalY + 18);
-    
-    doc.setFontSize(12);
-    doc.setTextColor(10, 25, 47);
+    doc.setLineWidth(0.5);
+    doc.line(120, finalY + 32, 190, finalY + 32);
+
+    doc.setFontSize(11);
     doc.setFont(undefined, 'bold');
-    doc.text(`Grand Total:`, 130, finalY + 25);
-    doc.text(`INR ${summary.grandTotal.toLocaleString()}`, 170, finalY + 25, { align: "right" });
+    if (profit >= 0) {
+      doc.setTextColor(16, 124, 65); // Green
+    } else {
+      doc.setTextColor(220, 53, 69); // Red
+    }
+    doc.text(`Net Projected Profit (1 - 2):`, 120, finalY + 38);
+    doc.text(`INR ${profit.toLocaleString()}`, 190, finalY + 38, { align: "right" });
 
     doc.save(`${details.projectName}_BOQ.pdf`);
     toast.success("PDF Exported");
@@ -506,20 +535,43 @@ function NewEstimateForm() {
                         type="number" 
                         placeholder="0" 
                         min="0"
-                        className="h-12 border-slate-200 font-bold text-lg rounded-xl"
+                        className="h-12 border-slate-200 font-bold text-lg rounded-xl text-navy"
                         value={details.builtUpArea === 0 ? "" : details.builtUpArea}
                         onChange={(e) => handleDetailChange('builtUpArea', e.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Number of Floors</Label>
-                      <Input 
-                        type="number" 
-                        min="1"
-                        className="h-12 border-slate-200 rounded-xl"
-                        value={details.floors === 0 ? "" : details.floors}
-                        onChange={(e) => handleDetailChange('floors', e.target.value)}
-                      />
+                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Sq.Ft Rate (₹/sq.ft)</Label>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₹</span>
+                        <Input 
+                          type="number" 
+                          placeholder="Rate per sq.ft" 
+                          min="0"
+                          className="h-12 pl-8 border-slate-200 font-bold text-lg rounded-xl text-navy"
+                          value={details.sqFtRate === 0 || !details.sqFtRate ? "" : details.sqFtRate}
+                          onChange={(e) => handleDetailChange('sqFtRate', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Floors Detail</Label>
+                      <Select 
+                        value={String(details.floors || 1)} 
+                        onValueChange={(v) => handleDetailChange('floors', Number(v))}
+                      >
+                        <SelectTrigger className="h-12 border-slate-200 rounded-xl font-medium">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">Ground Floor Only</SelectItem>
+                          <SelectItem value="2">Ground + 1 Floor</SelectItem>
+                          <SelectItem value="3">Ground + 2 Floors</SelectItem>
+                          <SelectItem value="4">Ground + 3 Floors</SelectItem>
+                          <SelectItem value="5">Ground + 4 Floors</SelectItem>
+                          <SelectItem value="6">Ground + 5 Floors</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-xs font-bold uppercase tracking-wider text-slate-500">Foundation Type</Label>
@@ -817,22 +869,40 @@ function NewEstimateForm() {
                         </div>
                         <h2 className="text-2xl font-bold tracking-tight">Velon Constructions</h2>
                       </div>
-                      <div className="flex flex-wrap gap-x-12 gap-y-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                         <div>
                           <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest mb-1">Project</p>
-                          <p className="text-lg font-semibold">{details.projectName}</p>
+                          <p className="text-base font-semibold truncate" title={details.projectName}>{details.projectName || "N/A"}</p>
                         </div>
                         <div>
                           <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest mb-1">Client</p>
-                          <p className="text-lg font-semibold">{details.clientName}</p>
-                        </div>
-                        <div>
-                          <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest mb-1">Built-up Area</p>
-                          <p className="text-lg font-semibold">{details.builtUpArea} sq.ft</p>
+                          <p className="text-base font-semibold truncate" title={details.clientName}>{details.clientName || "N/A"}</p>
                         </div>
                         <div>
                           <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest mb-1">Estimate Date</p>
-                          <p className="text-lg font-semibold">{details.date}</p>
+                          <p className="text-base font-semibold">{details.date}</p>
+                        </div>
+                        <div>
+                          <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest mb-1">Project Type</p>
+                          <p className="text-base font-semibold capitalize">{details.projectType}</p>
+                        </div>
+                        <div>
+                          <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest mb-1">Built-up Area</p>
+                          <p className="text-base font-semibold">{details.builtUpArea} sq.ft</p>
+                        </div>
+                        <div>
+                          <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest mb-1">Sq.Ft Rate</p>
+                          <p className="text-base font-semibold">₹{(details.sqFtRate || 0).toLocaleString()}/sq.ft</p>
+                        </div>
+                        <div>
+                          <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest mb-1">Floors</p>
+                          <p className="text-base font-semibold">
+                            {details.floors <= 1 ? "Ground Only" : `Ground + ${details.floors - 1}`}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest mb-1">Foundation</p>
+                          <p className="text-base font-semibold">{details.foundationType}</p>
                         </div>
                       </div>
                     </div>
@@ -880,9 +950,38 @@ function NewEstimateForm() {
                       <span className="text-slate-500">Labour & Transportation</span>
                       <span className="font-semibold text-navy">₹{(summary.labourCost + summary.transportation).toLocaleString()}</span>
                     </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-500">BOQ Buffer & Contractor Margin</span>
+                      <span className="font-semibold text-navy">
+                        ₹{(summary.grandTotal - (summary.materialTotal + summary.labourCost + summary.transportation)).toLocaleString()}
+                      </span>
+                    </div>
+                    
+                    <div className="h-px bg-slate-200/60 my-2" />
+
+                    <div className="flex justify-between items-center text-sm pt-1">
+                      <span className="text-slate-500 font-semibold">1. Project Proposal Value (Estimate)</span>
+                      <span className="font-bold text-navy">
+                        ₹{(details.builtUpArea * (details.sqFtRate || 0) || summary.grandTotal).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-500 font-semibold">2. Total Construction Expenses (BOQ)</span>
+                      <span className="font-bold text-slate-700">
+                        ₹{summary.grandTotal.toLocaleString()}
+                      </span>
+                    </div>
+                    
                     <div className="flex justify-between items-center pt-4 border-t border-navy/10 mt-2">
-                       <span className="text-lg font-bold text-navy">Grand Total Estimate</span>
-                       <span className="text-2xl font-black text-navy tracking-tight">₹{summary.grandTotal.toLocaleString()}</span>
+                       <span className="text-base font-extrabold text-navy">Net Projected Profit (1 - 2)</span>
+                       <span className={cn(
+                         "text-xl font-black tracking-tight",
+                         ((details.builtUpArea * (details.sqFtRate || 0) || summary.grandTotal) - summary.grandTotal) >= 0 
+                           ? "text-emerald-600" 
+                           : "text-rose-600"
+                       )}>
+                         ₹{((details.builtUpArea * (details.sqFtRate || 0) || summary.grandTotal) - summary.grandTotal).toLocaleString()}
+                       </span>
                     </div>
                   </div>
                 </Card>
